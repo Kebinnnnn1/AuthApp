@@ -94,30 +94,29 @@ LOGIN_REDIRECT_URL = '/dashboard/'
 LOGOUT_REDIRECT_URL = '/'
 
 # ─────────────────────────────────────────────
-# EMAIL CONFIGURATION
+# EMAIL CONFIGURATION (SendGrid SMTP)
 # ─────────────────────────────────────────────
-# Uses SMTP if EMAIL_HOST_USER / EMAIL_HOST_PASSWORD env vars are set.
-# Otherwise falls back to console backend (codes print in the terminal).
-#
-# To enable Gmail SMTP, run these in PowerShell before `python manage.py runserver`:
-#   $env:EMAIL_HOST_USER     = "you@gmail.com"
-#   $env:EMAIL_HOST_PASSWORD = "your-16-char-app-password"
+# Set these in Railway:
+#   EMAIL_HOST_USER     = apikey          ← literally the word "apikey"
+#   EMAIL_HOST_PASSWORD = SG.xxxxx...     ← your SendGrid API key
+#   DEFAULT_FROM_EMAIL  = you@yourdomain.com  ← verified sender in SendGrid
 #
 _smtp_user = os.environ.get('EMAIL_HOST_USER', '').strip()
 _smtp_pass = os.environ.get('EMAIL_HOST_PASSWORD', '').strip()
+_from_email = os.environ.get('DEFAULT_FROM_EMAIL', '').strip()
 
 if _smtp_user and _smtp_pass:
     EMAIL_BACKEND       = 'django.core.mail.backends.smtp.EmailBackend'
-    EMAIL_HOST          = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
+    EMAIL_HOST          = os.environ.get('EMAIL_HOST', 'smtp.sendgrid.net')
     EMAIL_PORT          = int(os.environ.get('EMAIL_PORT', 587))
     EMAIL_USE_TLS       = True
     EMAIL_HOST_USER     = _smtp_user
     EMAIL_HOST_PASSWORD = _smtp_pass
-    DEFAULT_FROM_EMAIL  = f'AuthApp <{_smtp_user}>'
-    EMAIL_TIMEOUT       = 10  # seconds — prevents Railway timeout on SMTP hang
-    print(f'[email] SMTP configured: {_smtp_user} via smtp.gmail.com:587')
+    DEFAULT_FROM_EMAIL  = _from_email or f'AuthApp <{_smtp_user}>'
+    EMAIL_TIMEOUT       = 10
+    print(f'[email] ✅ SMTP ready: host={EMAIL_HOST} user={_smtp_user} from={DEFAULT_FROM_EMAIL}')
 else:
-    # Development — code prints in runserver terminal
     EMAIL_BACKEND      = 'django.core.mail.backends.console.EmailBackend'
     DEFAULT_FROM_EMAIL = 'AuthApp <noreply@authapp.local>'
-    print('[email] No SMTP credentials found — using console backend (emails print to logs)')
+    print('[email] ⚠️  No SMTP credentials — verification codes will print to logs only')
+
