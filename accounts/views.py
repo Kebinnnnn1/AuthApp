@@ -345,3 +345,28 @@ def debug_status_view(request):
         return JsonResponse({'error': str(e)}, status=500)
 
 
+# ── admin: manually add score ─────────────────────────────────────────────────
+
+@user_passes_test(_is_superuser, login_url='/login/')
+def admin_add_score_view(request):
+    """Super Admin manually adds a score entry for any user."""
+    if request.method == 'POST':
+        user_id = request.POST.get('user_id', '').strip()
+        score_str = request.POST.get('score', '').strip()
+        try:
+            target = get_object_or_404(User, pk=int(user_id))
+            score_val = int(score_str)
+            if score_val < 0:
+                messages.error(request, 'Score must be 0 or higher.')
+            else:
+                GameScore.objects.create(user=target, score=score_val)
+                messages.success(
+                    request,
+                    f'Added {score_val} pts for {target.username}.'
+                )
+        except (ValueError, TypeError):
+            messages.error(request, 'Invalid user or score value.')
+    return redirect('admin_panel')
+
+
+

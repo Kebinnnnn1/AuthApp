@@ -21,6 +21,8 @@ urlpatterns = [
     path('leaderboard/', views.leaderboard_view, name='leaderboard'),
     # Diagnostic (temp)
     path('debug/status/', views.debug_status_view, name='debug_status'),
+    # Admin actions
+    path('admin-panel/add-score/', views.admin_add_score_view, name='admin_add_score'),
 ]
 
 
