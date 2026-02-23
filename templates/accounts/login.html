@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block title %}Log In · AuthApp{% endblock %}
+{% block meta_description %}Log in to your AuthApp account.{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-card-header">
+            <span class="auth-icon">🔐</span>
+            <h1>Welcome Back</h1>
+            <p>Log in to access your dashboard.</p>
+        </div>
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            {# Username #}
+            <div class="form-group">
+                <label for="{{ form.username.id_for_label }}">Username</label>
+                {{ form.username }}
+                {% if form.username.errors %}
+                <div class="field-errors">
+                    {% for error in form.username.errors %}
+                    <p class="field-error">⚠ {{ error }}</p>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+
+            {# Password #}
+            <div class="form-group">
+                <label for="{{ form.password.id_for_label }}">Password</label>
+                {{ form.password }}
+                {% if form.password.errors %}
+                <div class="field-errors">
+                    {% for error in form.password.errors %}
+                    <p class="field-error">⚠ {{ error }}</p>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="margin-top:0.5rem;">Log In →</button>
+        </form>
+
+        <div class="auth-footer">
+            Don't have an account? <a href="{% url 'signup' %}">Sign up for free</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

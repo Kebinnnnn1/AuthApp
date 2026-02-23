@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Panel · AuthApp{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+
+    <div class="dashboard-header">
+        <div class="greeting-badge">🛡️ Staff Area</div>
+        <h1><span>Admin Panel</span></h1>
+        <p class="subtitle">Site analytics and user management overview.</p>
+    </div>
+
+    <!-- Quick Links -->
+    <div style="display:flex; gap:0.75rem; flex-wrap:wrap; margin-bottom:2rem;">
+        <a href="{% url 'dashboard' %}" class="btn btn-outline"
+            style="width:auto;padding:0.6rem 1.2rem;font-size:0.9rem;">
+            🏠 Go to Dashboard
+        </a>
+        <a href="/admin/" class="btn btn-outline" style="width:auto;padding:0.6rem 1.2rem;font-size:0.9rem;">
+            ⚙️ Django Admin
+        </a>
+        <a href="{% url 'logout' %}" class="btn btn-danger" style="width:auto;padding:0.6rem 1.2rem;font-size:0.9rem;">
+            Log Out
+        </a>
+    </div>
+
+    <!-- Analytics Stats -->
+    <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));">
+        <div class="stat-card">
+            <div class="stat-icon">👥</div>
+            <div class="stat-info">
+                <h3>{{ total_users }}</h3>
+                <p>Total Users</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">✅</div>
+            <div class="stat-info">
+                <h3>{{ verified_count }}</h3>
+                <p>Verified</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">⏳</div>
+            <div class="stat-info">
+                <h3>{{ unverified_count }}</h3>
+                <p>Unverified</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">🆕</div>
+            <div class="stat-info">
+                <h3>{{ new_this_week }}</h3>
+                <p>New This Week</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">🛡️</div>
+            <div class="stat-info">
+                <h3>{{ staff_count }}</h3>
+                <p>Staff Members</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Registrations Table -->
+    <div class="info-card" style="overflow-x:auto;">
+        <h2>🕐 Recent Registrations</h2>
+
+        {% if recent_users %}
+        <table style="width:100%; border-collapse:collapse; font-size:0.88rem; margin-top:0.5rem;">
+            <thead>
+                <tr style="border-bottom:2px solid var(--border);">
+                    <th style="text-align:left; padding:0.6rem 0.75rem; color:var(--text-muted); font-weight:600;">#
+                    </th>
+                    <th style="text-align:left; padding:0.6rem 0.75rem; color:var(--text-muted); font-weight:600;">
+                        Username</th>
+                    <th style="text-align:left; padding:0.6rem 0.75rem; color:var(--text-muted); font-weight:600;">Email
+                    </th>
+                    <th style="text-align:left; padding:0.6rem 0.75rem; color:var(--text-muted); font-weight:600;">
+                        Joined</th>
+                    <th style="text-align:left; padding:0.6rem 0.75rem; color:var(--text-muted); font-weight:600;">Email
+                        Verified</th>
+                    <th style="text-align:left; padding:0.6rem 0.75rem; color:var(--text-muted); font-weight:600;">Staff
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in recent_users %}
+                <tr style="border-bottom:1px solid rgba(51,65,85,0.4); transition:background 0.15s;"
+                    onmouseover="this.style.background='rgba(99,102,241,0.06)'"
+                    onmouseout="this.style.background='transparent'">
+                    <td style="padding:0.65rem 0.75rem; color:var(--text-muted);">{{ u.id }}</td>
+                    <td style="padding:0.65rem 0.75rem; font-weight:600;">{{ u.username }}</td>
+                    <td style="padding:0.65rem 0.75rem; color:var(--text-muted);">{{ u.email|default:"—" }}</td>
+                    <td style="padding:0.65rem 0.75rem; color:var(--text-muted);">{{ u.date_joined|date:"M d, Y" }}</td>
+                    <td style="padding:0.65rem 0.75rem;">
+                        {% if u.email_verification.is_verified %}
+                        <span class="badge-active">✓ Verified</span>
+                        {% elif u.is_superuser %}
+                        <span style="color:var(--primary-light);font-size:0.8rem;">Admin</span>
+                        {% else %}
+                        <span style="color:#fca5a5;font-size:0.82rem;">✗ Pending</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding:0.65rem 0.75rem;">
+                        {% if u.is_staff %}
+                        <span style="color:var(--primary-light);">Yes</span>
+                        {% else %}
+                        <span style="color:var(--text-muted);">No</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="color:var(--text-muted); padding:1rem 0;">No users yet.</p>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

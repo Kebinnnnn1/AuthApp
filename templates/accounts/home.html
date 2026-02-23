@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block title %}Welcome · AuthApp{% endblock %}
+{% block meta_description %}Secure Django authentication — sign up or log in to get started.{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div class="hero-badge">✨ Open Source · Built with Django</div>
+    <h1>
+        Secure Auth,<br>
+        <span class="gradient-text">Done Right.</span>
+    </h1>
+    <p>
+        A clean, modern authentication system powered by Python Django.
+        Sign up in seconds and access your personal dashboard.
+    </p>
+
+    <div class="hero-actions">
+        {% if user.is_authenticated %}
+        <a href="{% url 'dashboard' %}" class="btn btn-primary">Go to Dashboard →</a>
+        {% else %}
+        <a href="{% url 'signup' %}" class="btn btn-primary">Get Started →</a>
+        <a href="{% url 'login' %}" class="btn btn-outline">Log In</a>
+        {% endif %}
+    </div>
+
+    <div class="features-grid">
+        <div class="feature-card">
+            <span class="feature-icon">🔑</span>
+            <h3>Secure Login</h3>
+            <p>Session-based authentication with CSRF protection built in.</p>
+        </div>
+        <div class="feature-card">
+            <span class="feature-icon">🛡️</span>
+            <h3>Protected Routes</h3>
+            <p>Dashboard and sensitive pages are only accessible when logged in.</p>
+        </div>
+        <div class="feature-card">
+            <span class="feature-icon">⚡</span>
+            <h3>Django Powered</h3>
+            <p>Built on battle-tested Django auth — robust and production-ready.</p>
+        </div>
+    </div>
+</section>
+{% endblock %}

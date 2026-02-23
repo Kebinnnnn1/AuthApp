@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block title %}Sign Up · AuthApp{% endblock %}
+{% block meta_description %}Create a new AuthApp account.{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-card-header">
+            <span class="auth-icon">🚀</span>
+            <h1>Create Account</h1>
+            <p>Join today — it's completely free.</p>
+        </div>
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            {# Username #}
+            <div class="form-group">
+                <label for="{{ form.username.id_for_label }}">Username</label>
+                {{ form.username }}
+                {% if form.username.errors %}
+                <div class="field-errors">
+                    {% for error in form.username.errors %}
+                    <p class="field-error">⚠ {{ error }}</p>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+
+            {# Email #}
+            <div class="form-group">
+                <label for="{{ form.email.id_for_label }}">Email Address</label>
+                {{ form.email }}
+                {% if form.email.errors %}
+                <div class="field-errors">
+                    {% for error in form.email.errors %}
+                    <p class="field-error">⚠ {{ error }}</p>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+
+            {# Password #}
+            <div class="form-group">
+                <label for="{{ form.password1.id_for_label }}">Password</label>
+                {{ form.password1 }}
+                {% if form.password1.errors %}
+                <div class="field-errors">
+                    {% for error in form.password1.errors %}
+                    <p class="field-error">⚠ {{ error }}</p>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="help-text">Min. 8 characters. Can't be too similar to your username or a common password.</p>
+                {% endif %}
+            </div>
+
+            {# Confirm Password #}
+            <div class="form-group">
+                <label for="{{ form.password2.id_for_label }}">Confirm Password</label>
+                {{ form.password2 }}
+                {% if form.password2.errors %}
+                <div class="field-errors">
+                    {% for error in form.password2.errors %}
+                    <p class="field-error">⚠ {{ error }}</p>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+
+            {# Non-field errors (e.g. passwords don't match) #}
+            {% if form.non_field_errors %}
+            {% for error in form.non_field_errors %}
+            <p class="field-error" style="margin-bottom:1rem;">⚠ {{ error }}</p>
+            {% endfor %}
+            {% endif %}
+
+            <button type="submit" class="btn btn-primary">Create My Account</button>
+        </form>
+
+        <div class="auth-footer">
+            Already have an account? <a href="{% url 'login' %}">Log in</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

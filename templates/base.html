@@ -1,0 +1,64 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}AuthApp{% endblock %}</title>
+    <meta name="description" content="{% block meta_description %}A secure Django authentication app.{% endblock %}" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="{% static 'css/style.css' %}" />
+</head>
+
+<body>
+
+    <!-- ===== NAVBAR ===== -->
+    <nav class="navbar">
+        <a href="{% url 'home' %}" class="navbar-brand">
+            <span class="brand-icon">🔐</span>
+            <span>AuthApp</span>
+        </a>
+        <ul class="nav-links">
+            {% if user.is_authenticated %}
+            <li><span class="nav-username">👋 {{ user.username }}</span></li>
+            <li><a href="{% url 'dashboard' %}">Dashboard</a></li>
+            {% if user.is_staff %}
+            <li><a href="{% url 'admin_panel' %}" class="btn-nav btn-nav-outline">🛡️ Admin Panel</a></li>
+            {% endif %}
+            <li><a href="{% url 'logout' %}" class="btn-nav btn-nav-outline">Log Out</a></li>
+            {% else %}
+            <li><a href="{% url 'login' %}">Log In</a></li>
+            <li><a href="{% url 'signup' %}" class="btn-nav">Sign Up</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+
+    <!-- ===== FLASH MESSAGES ===== -->
+    {% if messages %}
+    <div class="messages-container">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">
+            {% if message.tags == 'success' %}✅{% elif message.tags == 'error' %}❌{% elif message.tags == 'info' %}ℹ️{%
+            else %}⚠️{% endif %}
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- ===== PAGE CONTENT ===== -->
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- ===== FOOTER ===== -->
+    <footer>
+        <p>© 2026 AuthApp · Built with Django</p>
+    </footer>
+
+</body>
+
+</html>

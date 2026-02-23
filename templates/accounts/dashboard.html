@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard · AuthApp{% endblock %}
+{% block meta_description %}Your personal AuthApp dashboard.{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+
+    <div class="dashboard-header">
+        <div class="greeting-badge">🟢 Active Session</div>
+        <h1>Hello, <span>{{ user.username }}</span>! 👋</h1>
+        <p class="subtitle">You are successfully logged in. Here's an overview of your account.</p>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon">👤</div>
+            <div class="stat-info">
+                <h3>{{ user.username }}</h3>
+                <p>Username</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">📧</div>
+            <div class="stat-info">
+                <h3 style="font-size:1rem;">{{ user.email|default:"—" }}</h3>
+                <p>Email Address</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">📅</div>
+            <div class="stat-info">
+                <h3 style="font-size:1rem;">{{ user.date_joined|date:"M d, Y" }}</h3>
+                <p>Member Since</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Account Details -->
+    <div class="info-card">
+        <h2>🗂️ Account Details</h2>
+        <div class="info-row">
+            <span class="label">User ID</span>
+            <span class="value">#{{ user.id }}</span>
+        </div>
+        <div class="info-row">
+            <span class="label">Username</span>
+            <span class="value">{{ user.username }}</span>
+        </div>
+        <div class="info-row">
+            <span class="label">Email</span>
+            <span class="value">{{ user.email|default:"Not provided" }}</span>
+        </div>
+        <div class="info-row">
+            <span class="label">Joined</span>
+            <span class="value">{{ user.date_joined|date:"F j, Y, g:i a" }}</span>
+        </div>
+        <div class="info-row">
+            <span class="label">Last Login</span>
+            <span class="value">{{ user.last_login|date:"F j, Y, g:i a"|default:"—" }}</span>
+        </div>
+        <div class="info-row">
+            <span class="label">Status</span>
+            <span class="value"><span class="badge-active">● Active</span></span>
+        </div>
+        <div class="info-row">
+            <span class="label">Staff Access</span>
+            <span class="value">{% if user.is_staff %}Yes{% else %}No{% endif %}</span>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="dashboard-actions">
+        <a href="{% url 'home' %}" class="btn btn-outline">← Back to Home</a>
+        <a href="{% url 'logout' %}" class="btn btn-danger">Log Out</a>
+    </div>
+
+</div>
+{% endblock %}

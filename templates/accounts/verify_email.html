@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block title %}Verify Your Email · AuthApp{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-card-header">
+            <span class="auth-icon">📬</span>
+            <h1>Check Your Email</h1>
+            <p>We sent a 6-digit code to<br><strong style="color:var(--primary-light)">{{ email }}</strong></p>
+        </div>
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="{{ form.code.id_for_label }}">Verification Code</label>
+                {{ form.code }}
+                {% if form.code.errors %}
+                <div class="field-errors">
+                    {% for error in form.code.errors %}
+                    <p class="field-error">⚠ {{ error }}</p>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                <p class="help-text">Enter the 6-digit code from the email. Check spam if you don't see it.</p>
+            </div>
+            <button type="submit" class="btn btn-primary">Verify &amp; Activate Account</button>
+        </form>
+
+        <div class="auth-footer" style="margin-top:1.25rem;">
+            Didn't receive a code?
+            <a href="{% url 'resend_code' %}">Resend code</a>
+        </div>
+        <div class="auth-footer" style="margin-top:0.5rem;">
+            <a href="{% url 'signup' %}">← Start over</a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .code-input {
+        font-size: 2rem;
+        letter-spacing: 0.5rem;
+        text-align: center;
+        font-weight: 700;
+        font-family: monospace;
+        padding: 1rem;
+    }
+</style>
+{% endblock %}
