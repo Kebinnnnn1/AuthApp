@@ -28,7 +28,7 @@
         <div class="stat-card" style="flex:1;min-width:100px;">
             <div class="stat-icon">🏆</div>
             <div class="stat-info">
-                <h3 id="best-display">{{ user_best.score|default:"—" }}</h3>
+                <h3 id="best-display">{% if user_best %}{{ user_best.score }}{% else %}---{% endif %}</h3>
                 <p>Your Best</p>
             </div>
         </div>
@@ -47,7 +47,7 @@
         user-select:none;
         touch-action:none;
     ">
-        <!-- State overlays -->
+        <!-- Start overlay -->
         <div id="overlay-start" style="
             position:absolute;inset:0;display:flex;flex-direction:column;
             align-items:center;justify-content:center;gap:1.25rem;
@@ -62,12 +62,12 @@
                 padding:0.85rem 2.5rem;border-radius:12px;font-size:1rem;
                 font-weight:700;cursor:pointer;font-family:inherit;
                 transition:transform 0.15s,background 0.15s;
-            " onmouseover="this.style.background='var(--primary-dark)'"
-                onmouseout="this.style.background='var(--primary)'">
+            ">
                 ▶ Start Game
             </button>
         </div>
 
+        <!-- End overlay -->
         <div id="overlay-end" style="
             position:absolute;inset:0;display:none;flex-direction:column;
             align-items:center;justify-content:center;gap:1rem;
@@ -100,47 +100,55 @@
         <a href="{% url 'leaderboard' %}" class="btn btn-outline"
             style="width:auto;padding:0.6rem 1.2rem;font-size:0.9rem;">🏆 Leaderboard</a>
         <a href="{% url 'dashboard' %}" class="btn btn-outline"
-            style="width:auto;padding:0.6rem 1.2rem;font-size:0.9rem;">← Dashboard</a>
+            style="width:auto;padding:0.6rem 1.2rem;font-size:0.9rem;">Back to Dashboard</a>
     </div>
 
 </div>
 
 <script>
-    const CSRF = '{{ csrf_token }}';
-    const SUBMIT_URL = '{% url "submit_score" %}';
+    var CSRF = '{{ csrf_token }}';
+    var SUBMIT_URL = '{% url "submit_score" %}';
 
-    let score = 0, timeLeft = 30, running = false;
-    let timer = null, spawnTimer = null, targets = [];
-    let prevBest = {{ user_best.score|default: "null" }};
+    var gameScore = 0;
+    var timeLeft = 30;
+    var running = false;
+    var timer = null;
+    var spawnTimer = null;
+    var targets = [];
+    {% if user_best %}
+    var prevBest = {{ user_best.score }};
+    {% else %}
+    var prevBest = null;
+    {% endif %}
 
-    const arena = document.getElementById('game-arena');
-    const scoreDsp = document.getElementById('score-display');
-    const timeDsp = document.getElementById('time-display');
-    const bestDsp = document.getElementById('best-display');
-    const overlayEnd = document.getElementById('overlay-end');
-    const finalScore = document.getElementById('final-score');
-    const newBestMsg = document.getElementById('new-best-msg');
-    const overStart = document.getElementById('overlay-start');
+    var arena = document.getElementById('game-arena');
+    var scoreDsp = document.getElementById('score-display');
+    var timeDsp = document.getElementById('time-display');
+    var bestDsp = document.getElementById('best-display');
+    var overlayEnd = document.getElementById('overlay-end');
+    var finalScore = document.getElementById('final-score');
+    var newBestMsg = document.getElementById('new-best-msg');
+    var overStart = document.getElementById('overlay-start');
 
     function startGame() {
-        // Reset
-        score = 0; timeLeft = 30; running = true;
-        targets.forEach(t => t.el.remove()); targets = [];
-        scoreDsp.textContent = 0; timeDsp.textContent = 30;
+        gameScore = 0; timeLeft = 30; running = true;
+        targets.forEach(function (t) { t.el.remove(); });
+        targets = [];
+        scoreDsp.textContent = 0;
+        timeDsp.textContent = 30;
+        timeDsp.style.color = '';
         overStart.style.display = 'none';
         overlayEnd.style.display = 'none';
         newBestMsg.style.display = 'none';
 
-        // Countdown timer
         clearInterval(timer);
-        timer = setInterval(() => {
+        timer = setInterval(function () {
             timeLeft--;
             timeDsp.textContent = timeLeft;
             if (timeLeft <= 5) timeDsp.style.color = '#fca5a5';
             if (timeLeft <= 0) endGame();
         }, 1000);
 
-        // Spawn targets
         clearInterval(spawnTimer);
         spawnTarget();
         spawnTimer = setInterval(spawnTarget, 900);
@@ -148,49 +156,53 @@
 
     function spawnTarget() {
         if (!running) return;
-        const size = Math.floor(Math.random() * 30 + 38); // 38–68px
-        const el = document.createElement('div');
-        const arenaRect = arena.getBoundingClientRect();
-        const x = Math.random() * (arenaRect.width - size - 10) + 5;
-        const y = Math.random() * (arenaRect.height - size - 10) + 5;
-        const life = Math.random() * 900 + 900; // 900–1800ms
-        const hue = Math.floor(Math.random() * 60) + 220; // blue-purple
+        var size = Math.floor(Math.random() * 30 + 38);
+        var el = document.createElement('div');
+        var arenaRect = arena.getBoundingClientRect();
+        var x = Math.random() * (arenaRect.width - size - 10) + 5;
+        var y = Math.random() * (arenaRect.height - size - 10) + 5;
+        var life = Math.random() * 900 + 900;
+        var hue = Math.floor(Math.random() * 60) + 220;
 
-        el.style.cssText = `
-        position:absolute;left:${x}px;top:${y}px;
-        width:${size}px;height:${size}px;border-radius:50%;
-        background:hsl(${hue},80%,60%);
-        box-shadow:0 0 18px hsl(${hue},80%,60%,0.5);
-        cursor:pointer;user-select:none;touch-action:manipulation;
-        transition:transform 0.1s,opacity 0.2s;
-        animation:popIn 0.15s ease;
-    `;
+        el.style.cssText = [
+            'position:absolute',
+            'left:' + x + 'px',
+            'top:' + y + 'px',
+            'width:' + size + 'px',
+            'height:' + size + 'px',
+            'border-radius:50%',
+            'background:hsl(' + hue + ',80%,60%)',
+            'box-shadow:0 0 18px hsl(' + hue + ',80%,60%)',
+            'cursor:pointer',
+            'user-select:none',
+            'touch-action:manipulation',
+            'transition:transform 0.1s,opacity 0.2s',
+            'animation:popIn 0.15s ease'
+        ].join(';');
 
-        const id = Date.now() + Math.random();
-        const obj = { el, id };
-        targets.push(obj);
+        var targetId = Date.now() + Math.random();
+        targets.push({ el: el, id: targetId });
 
-        el.addEventListener('pointerdown', (e) => {
+        el.addEventListener('pointerdown', function (e) {
             e.preventDefault();
             if (!running) return;
-            score++;
-            scoreDsp.textContent = score;
+            gameScore++;
+            scoreDsp.textContent = gameScore;
             el.style.transform = 'scale(1.3)';
             el.style.opacity = '0';
-            setTimeout(() => el.remove(), 180);
-            targets = targets.filter(t => t.id !== id);
+            setTimeout(function () { el.remove(); }, 180);
+            targets = targets.filter(function (t) { return t.id !== targetId; });
         });
 
         arena.appendChild(el);
 
-        // Auto-expire
-        setTimeout(() => {
+        setTimeout(function () {
             if (!running) return;
-            const stillThere = targets.find(t => t.id === id);
+            var stillThere = targets.some(function (t) { return t.id === targetId; });
             if (stillThere) {
                 el.style.opacity = '0';
-                setTimeout(() => el.remove(), 180);
-                targets = targets.filter(t => t.id !== id);
+                setTimeout(function () { el.remove(); }, 180);
+                targets = targets.filter(function (t) { return t.id !== targetId; });
             }
         }, life);
     }
@@ -199,21 +211,23 @@
         running = false;
         clearInterval(timer);
         clearInterval(spawnTimer);
-        targets.forEach(t => { t.el.style.opacity = '0'; setTimeout(() => t.el.remove(), 180); });
+        targets.forEach(function (t) {
+            t.el.style.opacity = '0';
+            setTimeout(function () { t.el.remove(); }, 180);
+        });
         targets = [];
         timeDsp.style.color = '';
 
-        finalScore.textContent = score;
+        finalScore.textContent = gameScore;
         overlayEnd.style.display = 'flex';
 
-        // Save score
-        fetch(SUBMIT_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
-            body: JSON.stringify({ score })
-        })
-            .then(r => r.json())
-            .then(data => {
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', SUBMIT_URL);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.setRequestHeader('X-CSRFToken', CSRF);
+        xhr.onload = function () {
+            if (xhr.status === 200) {
+                var data = JSON.parse(xhr.responseText);
                 if (data.best !== undefined) {
                     bestDsp.textContent = data.best;
                     if (prevBest === null || data.best > prevBest) {
@@ -221,8 +235,9 @@
                         prevBest = data.best;
                     }
                 }
-            })
-            .catch(() => { }); // silently ignore network errors
+            }
+        };
+        xhr.send(JSON.stringify({ score: gameScore }));
     }
 </script>
 
