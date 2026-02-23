@@ -19,6 +19,8 @@ urlpatterns = [
     path('game/', views.game_view, name='game'),
     path('game/submit/', views.submit_score_view, name='submit_score'),
     path('leaderboard/', views.leaderboard_view, name='leaderboard'),
+    # Diagnostic (temp)
+    path('debug/status/', views.debug_status_view, name='debug_status'),
 ]
 
 

@@ -318,3 +318,26 @@ def leaderboard_view(request):
         'user_best':  user_best,
     })
 
+
+# ── diagnostic (TEMP — remove after debugging) ───────────────────────────────
+
+from django.db import connection as _db_conn
+
+@login_required
+def debug_status_view(request):
+    """Returns DB table list and GameScore status as JSON. Staff-only."""
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Staff only'}, status=403)
+    try:
+        tables = _db_conn.introspection.table_names()
+        has_table = 'accounts_gamescore' in tables
+        count = GameScore.objects.count() if has_table else -1
+        return JsonResponse({
+            'has_gamescore_table': has_table,
+            'score_count': count,
+            'all_tables': tables,
+        })
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
