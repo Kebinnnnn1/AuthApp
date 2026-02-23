@@ -6,19 +6,32 @@
 <div class="dashboard-container">
 
     <div class="dashboard-header">
-        <div class="greeting-badge">🛡️ Staff Area</div>
+        {% if is_super_admin %}
+        <div class="greeting-badge"
+            style="background:rgba(234,179,8,0.12);border-color:rgba(234,179,8,0.35);color:#fbbf24;">
+            👑 Super Admin
+        </div>
+        {% else %}
+        <div class="greeting-badge"
+            style="background:rgba(99,102,241,0.12);border-color:rgba(99,102,241,0.35);color:var(--primary-light);">
+            🛡️ Staff Admin
+        </div>
+        {% endif %}
         <h1><span>Admin Panel</span></h1>
-        <p class="subtitle">Site analytics and user management overview.</p>
+        <p class="subtitle">
+            {% if is_super_admin %}
+            Full access — analytics, user management, and role control.
+            {% else %}
+            View-only access — site analytics and user overview.
+            {% endif %}
+        </p>
     </div>
 
     <!-- Quick Links -->
     <div style="display:flex; gap:0.75rem; flex-wrap:wrap; margin-bottom:2rem;">
         <a href="{% url 'dashboard' %}" class="btn btn-outline"
             style="width:auto;padding:0.6rem 1.2rem;font-size:0.9rem;">
-            🏠 Go to Dashboard
-        </a>
-        <a href="/admin/" class="btn btn-outline" style="width:auto;padding:0.6rem 1.2rem;font-size:0.9rem;">
-            ⚙️ Django Admin
+            🏠 Dashboard
         </a>
         <a href="{% url 'logout' %}" class="btn btn-danger" style="width:auto;padding:0.6rem 1.2rem;font-size:0.9rem;">
             Log Out
@@ -26,7 +39,7 @@
     </div>
 
     <!-- Analytics Stats -->
-    <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));">
+    <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));">
         <div class="stat-card">
             <div class="stat-icon">👥</div>
             <div class="stat-info">
@@ -59,65 +72,121 @@
             <div class="stat-icon">🛡️</div>
             <div class="stat-info">
                 <h3>{{ staff_count }}</h3>
-                <p>Staff Members</p>
+                <p>Staff Admins</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">👑</div>
+            <div class="stat-info">
+                <h3>{{ superuser_count }}</h3>
+                <p>Super Admins</p>
             </div>
         </div>
     </div>
 
-    <!-- Recent Registrations Table -->
+    <!-- User Management Table -->
     <div class="info-card" style="overflow-x:auto;">
-        <h2>🕐 Recent Registrations</h2>
+        <h2>📋 All Users{% if is_super_admin %} &amp; Management{% endif %}</h2>
 
-        {% if recent_users %}
-        <table style="width:100%; border-collapse:collapse; font-size:0.88rem; margin-top:0.5rem;">
+        {% if all_users %}
+        <table class="admin-table">
             <thead>
-                <tr style="border-bottom:2px solid var(--border);">
-                    <th style="text-align:left; padding:0.6rem 0.75rem; color:var(--text-muted); font-weight:600;">#
-                    </th>
-                    <th style="text-align:left; padding:0.6rem 0.75rem; color:var(--text-muted); font-weight:600;">
-                        Username</th>
-                    <th style="text-align:left; padding:0.6rem 0.75rem; color:var(--text-muted); font-weight:600;">Email
-                    </th>
-                    <th style="text-align:left; padding:0.6rem 0.75rem; color:var(--text-muted); font-weight:600;">
-                        Joined</th>
-                    <th style="text-align:left; padding:0.6rem 0.75rem; color:var(--text-muted); font-weight:600;">Email
-                        Verified</th>
-                    <th style="text-align:left; padding:0.6rem 0.75rem; color:var(--text-muted); font-weight:600;">Staff
-                    </th>
+                <tr>
+                    <th>#</th>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Joined</th>
+                    <th>Verified</th>
+                    <th>Role</th>
+                    {% if is_super_admin %}
+                    <th>Actions</th>
+                    {% endif %}
                 </tr>
             </thead>
             <tbody>
-                {% for u in recent_users %}
-                <tr style="border-bottom:1px solid rgba(51,65,85,0.4); transition:background 0.15s;"
-                    onmouseover="this.style.background='rgba(99,102,241,0.06)'"
-                    onmouseout="this.style.background='transparent'">
-                    <td style="padding:0.65rem 0.75rem; color:var(--text-muted);">{{ u.id }}</td>
-                    <td style="padding:0.65rem 0.75rem; font-weight:600;">{{ u.username }}</td>
-                    <td style="padding:0.65rem 0.75rem; color:var(--text-muted);">{{ u.email|default:"—" }}</td>
-                    <td style="padding:0.65rem 0.75rem; color:var(--text-muted);">{{ u.date_joined|date:"M d, Y" }}</td>
-                    <td style="padding:0.65rem 0.75rem;">
+                {% for u in all_users %}
+                <tr>
+                    <td class="text-muted">{{ u.id }}</td>
+                    <td class="text-bold">{{ u.username }}</td>
+                    <td class="text-muted">{{ u.email|default:"—" }}</td>
+                    <td class="text-muted">{{ u.date_joined|date:"M d, Y" }}</td>
+                    <td>
                         {% if u.email_verification.is_verified %}
                         <span class="badge-active">✓ Verified</span>
                         {% elif u.is_superuser %}
-                        <span style="color:var(--primary-light);font-size:0.8rem;">Admin</span>
+                        <span class="text-muted" style="font-size:0.82rem;">Admin</span>
                         {% else %}
                         <span style="color:#fca5a5;font-size:0.82rem;">✗ Pending</span>
                         {% endif %}
                     </td>
-                    <td style="padding:0.65rem 0.75rem;">
-                        {% if u.is_staff %}
-                        <span style="color:var(--primary-light);">Yes</span>
+                    <td>
+                        {% if u.is_superuser %}
+                        <span class="badge-superadmin">👑 Super Admin</span>
+                        {% elif u.is_staff %}
+                        <span class="badge-staff">🛡️ Staff</span>
                         {% else %}
-                        <span style="color:var(--text-muted);">No</span>
+                        <span class="badge-user">User</span>
                         {% endif %}
                     </td>
+                    {% if is_super_admin %}
+                    <td>
+                        <div class="action-buttons">
+                            {% if u.is_superuser %}
+                            <span class="text-muted" style="font-size:0.78rem;">—</span>
+                            {% elif u.is_staff %}
+                            <form method="post" action="{% url 'demote_user' u.id %}"
+                                onsubmit="return confirm('Demote {{ u.username }} from Staff Admin?')">
+                                {% csrf_token %}
+                                <button type="submit" class="btn-sm btn-demote" title="Demote to User">↓ Demote</button>
+                            </form>
+                            <form method="post" action="{% url 'delete_user' u.id %}"
+                                onsubmit="return confirm('⚠️ Permanently delete {{ u.username }}? This cannot be undone!')">
+                                {% csrf_token %}
+                                <button type="submit" class="btn-sm btn-delete" title="Delete User">✕ Delete</button>
+                            </form>
+                            {% else %}
+                            <form method="post" action="{% url 'promote_user' u.id %}"
+                                onsubmit="return confirm('Promote {{ u.username }} to Staff Admin?')">
+                                {% csrf_token %}
+                                <button type="submit" class="btn-sm btn-promote" title="Promote to Staff">↑
+                                    Promote</button>
+                            </form>
+                            <form method="post" action="{% url 'delete_user' u.id %}"
+                                onsubmit="return confirm('⚠️ Permanently delete {{ u.username }}? This cannot be undone!')">
+                                {% csrf_token %}
+                                <button type="submit" class="btn-sm btn-delete" title="Delete User">✕ Delete</button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                    {% endif %}
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
         {% else %}
-        <p style="color:var(--text-muted); padding:1rem 0;">No users yet.</p>
+        <p class="text-muted" style="padding:1rem 0;">No users yet.</p>
         {% endif %}
+    </div>
+
+    <!-- Role Legend -->
+    <div class="info-card">
+        <h2>🔑 Role Permissions</h2>
+        <div class="info-row">
+            <span class="label"><span class="badge-superadmin">👑 Super Admin</span></span>
+            <span class="value" style="font-size:0.85rem;font-weight:400;color:var(--text-muted);">Full access —
+                promote, demote, delete users</span>
+        </div>
+        <div class="info-row">
+            <span class="label"><span class="badge-staff">🛡️ Staff Admin</span></span>
+            <span class="value" style="font-size:0.85rem;font-weight:400;color:var(--text-muted);">View analytics &amp;
+                users — no management</span>
+        </div>
+        <div class="info-row">
+            <span class="label"><span class="badge-user">User</span></span>
+            <span class="value" style="font-size:0.85rem;font-weight:400;color:var(--text-muted);">Regular user — no
+                admin access</span>
+        </div>
     </div>
 
 </div>

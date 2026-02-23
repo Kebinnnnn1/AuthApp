@@ -13,6 +13,10 @@ media/
 venv/
 env/
 .env/
+Lib/
+Include/
+Scripts/
+pyvenv.cfg
 
 # Environment variables (NEVER commit secrets)
 .env

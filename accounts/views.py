@@ -191,23 +191,79 @@ def logout_view(request):
 
 # ── admin panel ──────────────────────────────────────────────────────────────
 
+def _is_superuser(user):
+    return user.is_active and user.is_superuser
+
+
 @user_passes_test(_is_staff, login_url='/login/')
 def admin_panel_view(request):
     total_users    = User.objects.count()
     verified_count = EmailVerification.objects.filter(is_verified=True).count()
-    # Count users with no EmailVerification record as "verified" too (e.g. superusers created via manage.py)
     unverified_with_record = EmailVerification.objects.filter(is_verified=False).count()
     staff_count    = User.objects.filter(is_staff=True).count()
+    superuser_count = User.objects.filter(is_superuser=True).count()
     week_ago       = timezone.now() - timedelta(days=7)
     new_this_week  = User.objects.filter(date_joined__gte=week_ago).count()
-    recent_users   = User.objects.order_by('-date_joined')[:10]
+    all_users      = User.objects.order_by('-date_joined')
 
     context = {
-        'total_users':    total_users,
-        'verified_count': verified_count,
+        'total_users':      total_users,
+        'verified_count':   verified_count,
         'unverified_count': unverified_with_record,
-        'staff_count':    staff_count,
-        'new_this_week':  new_this_week,
-        'recent_users':   recent_users,
+        'staff_count':      staff_count,
+        'superuser_count':  superuser_count,
+        'new_this_week':    new_this_week,
+        'all_users':        all_users,
+        'is_super_admin':   request.user.is_superuser,
     }
     return render(request, 'accounts/admin_panel.html', context)
+
+
+@user_passes_test(_is_superuser, login_url='/login/')
+def promote_user_view(request, user_id):
+    """Super Admin promotes a regular user to Staff Admin."""
+    if request.method == 'POST':
+        target = get_object_or_404(User, pk=user_id)
+        if target.is_superuser:
+            messages.warning(request, f'{target.username} is already a Super Admin.')
+        elif target.is_staff:
+            messages.info(request, f'{target.username} is already a Staff Admin.')
+        else:
+            target.is_staff = True
+            target.save()
+            messages.success(request, f'✅ {target.username} has been promoted to Staff Admin.')
+    return redirect('admin_panel')
+
+
+@user_passes_test(_is_superuser, login_url='/login/')
+def demote_user_view(request, user_id):
+    """Super Admin demotes a Staff Admin to regular user."""
+    if request.method == 'POST':
+        target = get_object_or_404(User, pk=user_id)
+        if target.is_superuser:
+            messages.error(request, 'Cannot demote a Super Admin.')
+        elif target.pk == request.user.pk:
+            messages.error(request, 'You cannot demote yourself.')
+        elif not target.is_staff:
+            messages.info(request, f'{target.username} is already a regular user.')
+        else:
+            target.is_staff = False
+            target.save()
+            messages.success(request, f'✅ {target.username} has been demoted to regular user.')
+    return redirect('admin_panel')
+
+
+@user_passes_test(_is_superuser, login_url='/login/')
+def delete_user_view(request, user_id):
+    """Super Admin deletes a user account."""
+    if request.method == 'POST':
+        target = get_object_or_404(User, pk=user_id)
+        if target.pk == request.user.pk:
+            messages.error(request, 'You cannot delete your own account.')
+        elif target.is_superuser:
+            messages.error(request, 'Cannot delete another Super Admin.')
+        else:
+            username = target.username
+            target.delete()
+            messages.success(request, f'✅ User "{username}" has been deleted.')
+    return redirect('admin_panel')

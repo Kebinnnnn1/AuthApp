@@ -23,7 +23,16 @@
         </a>
         <ul class="nav-links">
             {% if user.is_authenticated %}
-            <li><span class="nav-username">👋 {{ user.username }}</span></li>
+            <li>
+                <span class="nav-username">
+                    👋 {{ user.username }}
+                    {% if user.is_superuser %}
+                    <span class="badge-superadmin" style="margin-left:0.35rem;font-size:0.7rem;">👑 Super</span>
+                    {% elif user.is_staff %}
+                    <span class="badge-staff" style="margin-left:0.35rem;font-size:0.7rem;">🛡️ Staff</span>
+                    {% endif %}
+                </span>
+            </li>
             <li><a href="{% url 'dashboard' %}">Dashboard</a></li>
             {% if user.is_staff %}
             <li><a href="{% url 'admin_panel' %}" class="btn-nav btn-nav-outline">🛡️ Admin Panel</a></li>
