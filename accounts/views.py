@@ -49,11 +49,10 @@ def signup_view(request):
                     ),
                     from_email=settings.DEFAULT_FROM_EMAIL,
                     recipient_list=[user.email],
-                    fail_silently=False,
+                    fail_silently=True,
                 )
             except Exception:
-                # If email fails, still let user proceed (code shown in console)
-                pass
+                pass  # Fallback: show code in Railway logs if email fails
 
             # Store user id in session so verify view knows who to verify
             request.session['pending_verification_user_id'] = user.pk

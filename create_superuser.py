@@ -6,14 +6,16 @@ and optionally DJANGO_SUPERUSER_EMAIL in Railway env vars.
 import os
 import django
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'django_auth.settings')
+# Force-set so it always works on Railway, never overridden by another env var
+os.environ['DJANGO_SETTINGS_MODULE'] = 'django_auth.settings'
 django.setup()
 
 from django.contrib.auth.models import User
 
-USERNAME = os.environ.get('DJANGO_SUPERUSER_USERNAME', '')
-PASSWORD = os.environ.get('DJANGO_SUPERUSER_PASSWORD', '')
-EMAIL = os.environ.get('DJANGO_SUPERUSER_EMAIL', '')
+# Strip whitespace in case it was accidentally copied with spaces in Railway
+USERNAME = os.environ.get('DJANGO_SUPERUSER_USERNAME', '').strip()
+PASSWORD = os.environ.get('DJANGO_SUPERUSER_PASSWORD', '').strip()
+EMAIL    = os.environ.get('DJANGO_SUPERUSER_EMAIL', '').strip()
 
 if not USERNAME or not PASSWORD:
     print('ℹ️  DJANGO_SUPERUSER_USERNAME / PASSWORD not set — skipping superuser creation.')

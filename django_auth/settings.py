@@ -13,7 +13,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-change-this-in-produc
 
 DEBUG = os.environ.get('DEBUG', 'True').lower() in ('true', '1', 'yes')
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = [h.strip() for h in os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')]
 
 CSRF_TRUSTED_ORIGINS = [
     origin.strip()
@@ -107,13 +107,14 @@ _smtp_user = os.environ.get('EMAIL_HOST_USER', '')
 _smtp_pass = os.environ.get('EMAIL_HOST_PASSWORD', '')
 
 if _smtp_user and _smtp_pass:
-    EMAIL_BACKEND    = 'django.core.mail.backends.smtp.EmailBackend'
-    EMAIL_HOST       = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
-    EMAIL_PORT       = int(os.environ.get('EMAIL_PORT', 587))
-    EMAIL_USE_TLS    = True
-    EMAIL_HOST_USER  = _smtp_user
+    EMAIL_BACKEND       = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST          = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
+    EMAIL_PORT          = int(os.environ.get('EMAIL_PORT', 587))
+    EMAIL_USE_TLS       = True
+    EMAIL_HOST_USER     = _smtp_user
     EMAIL_HOST_PASSWORD = _smtp_pass
     DEFAULT_FROM_EMAIL  = f'AuthApp <{_smtp_user}>'
+    EMAIL_TIMEOUT       = 10  # seconds — prevents Railway request timeout on SMTP hang
 else:
     # Development — code prints in runserver terminal
     EMAIL_BACKEND      = 'django.core.mail.backends.console.EmailBackend'
