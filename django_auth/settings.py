@@ -103,8 +103,8 @@ LOGOUT_REDIRECT_URL = '/'
 #   $env:EMAIL_HOST_USER     = "you@gmail.com"
 #   $env:EMAIL_HOST_PASSWORD = "your-16-char-app-password"
 #
-_smtp_user = os.environ.get('EMAIL_HOST_USER', '')
-_smtp_pass = os.environ.get('EMAIL_HOST_PASSWORD', '')
+_smtp_user = os.environ.get('EMAIL_HOST_USER', '').strip()
+_smtp_pass = os.environ.get('EMAIL_HOST_PASSWORD', '').strip()
 
 if _smtp_user and _smtp_pass:
     EMAIL_BACKEND       = 'django.core.mail.backends.smtp.EmailBackend'
@@ -114,8 +114,10 @@ if _smtp_user and _smtp_pass:
     EMAIL_HOST_USER     = _smtp_user
     EMAIL_HOST_PASSWORD = _smtp_pass
     DEFAULT_FROM_EMAIL  = f'AuthApp <{_smtp_user}>'
-    EMAIL_TIMEOUT       = 10  # seconds — prevents Railway request timeout on SMTP hang
+    EMAIL_TIMEOUT       = 10  # seconds — prevents Railway timeout on SMTP hang
+    print(f'[email] SMTP configured: {_smtp_user} via smtp.gmail.com:587')
 else:
     # Development — code prints in runserver terminal
     EMAIL_BACKEND      = 'django.core.mail.backends.console.EmailBackend'
     DEFAULT_FROM_EMAIL = 'AuthApp <noreply@authapp.local>'
+    print('[email] No SMTP credentials found — using console backend (emails print to logs)')
