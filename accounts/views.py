@@ -3,6 +3,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
 from django.contrib import messages
+from django.http import JsonResponse
 from django.utils import timezone
 from datetime import timedelta
 
@@ -273,7 +274,11 @@ import json
 @login_required
 def game_view(request):
     """Render the mini game page."""
-    user_best = GameScore.objects.filter(user=request.user).order_by('-score').first()
+    try:
+        user_best = GameScore.objects.filter(user=request.user).order_by('-score').first()
+    except Exception as e:
+        print(f'[game_view] DB error: {e}')
+        user_best = None
     return render(request, 'accounts/game.html', {'user_best': user_best})
 
 
@@ -281,9 +286,7 @@ def game_view(request):
 def submit_score_view(request):
     """Receive a JSON POST with the player's score and save it."""
     if request.method != 'POST':
-        from django.http import JsonResponse
         return JsonResponse({'error': 'POST required'}, status=405)
-    from django.http import JsonResponse
     try:
         data  = json.loads(request.body)
         score = int(data.get('score', 0))
@@ -294,14 +297,22 @@ def submit_score_view(request):
         return JsonResponse({'ok': True, 'best': user_best.score if user_best else score})
     except (ValueError, KeyError, json.JSONDecodeError):
         return JsonResponse({'error': 'Bad data'}, status=400)
+    except Exception as e:
+        print(f'[submit_score] DB error: {e}')
+        return JsonResponse({'error': 'Score could not be saved'}, status=500)
 
 
 def leaderboard_view(request):
     """Show top 20 scores across all users."""
-    top_scores = GameScore.objects.select_related('user').order_by('-score')[:20]
-    user_best  = None
-    if request.user.is_authenticated:
-        user_best = GameScore.objects.filter(user=request.user).order_by('-score').first()
+    try:
+        top_scores = GameScore.objects.select_related('user').order_by('-score')[:20]
+        user_best  = None
+        if request.user.is_authenticated:
+            user_best = GameScore.objects.filter(user=request.user).order_by('-score').first()
+    except Exception as e:
+        print(f'[leaderboard] DB error: {e}')
+        top_scores = []
+        user_best  = None
     return render(request, 'accounts/leaderboard.html', {
         'top_scores': top_scores,
         'user_best':  user_best,
