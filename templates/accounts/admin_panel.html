@@ -30,16 +30,13 @@
     <!-- Quick Links -->
     <div style="display:flex; gap:0.75rem; flex-wrap:wrap; margin-bottom:2rem;">
         <a href="{% url 'dashboard' %}" class="btn btn-outline"
-            style="width:auto;padding:0.6rem 1.2rem;font-size:0.9rem;">
-            🏠 Dashboard
-        </a>
-        <a href="{% url 'logout' %}" class="btn btn-danger" style="width:auto;padding:0.6rem 1.2rem;font-size:0.9rem;">
-            Log Out
-        </a>
+            style="width:auto;padding:0.6rem 1.2rem;font-size:0.9rem;">🏠 Dashboard</a>
+        <a href="{% url 'logout' %}" class="btn btn-danger"
+            style="width:auto;padding:0.6rem 1.2rem;font-size:0.9rem;">Log Out</a>
     </div>
 
     <!-- Analytics Stats -->
-    <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));">
+    <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));">
         <div class="stat-card">
             <div class="stat-icon">👥</div>
             <div class="stat-info">
@@ -84,9 +81,29 @@
         </div>
     </div>
 
-    <!-- User Management Table -->
+    <!-- User Search + Table -->
     <div class="info-card" style="overflow-x:auto;">
-        <h2>📋 All Users{% if is_super_admin %} &amp; Management{% endif %}</h2>
+        <div
+            style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:1rem;">
+            <h2 style="margin-bottom:0;">📋 All Users</h2>
+            <form method="get" action="{% url 'admin_panel' %}" style="display:flex;gap:0.5rem;align-items:center;">
+                <input type="text" name="q" value="{{ search_query }}" placeholder="Search username or email…" style="background:rgba(255,255,255,0.05);border:1px solid var(--border);color:var(--text);
+                           padding:0.45rem 0.85rem;border-radius:8px;font-size:0.85rem;
+                           font-family:inherit;outline:none;width:220px;transition:border-color 0.2s;"
+                    onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'" />
+                <button type="submit" class="btn-sm btn-promote" style="padding:0.45rem 0.9rem;">🔍 Search</button>
+                {% if search_query %}
+                <a href="{% url 'admin_panel' %}" class="btn-sm btn-demote"
+                    style="padding:0.45rem 0.9rem;text-decoration:none;">✕ Clear</a>
+                {% endif %}
+            </form>
+        </div>
+
+        {% if search_query %}
+        <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:0.75rem;">
+            Results for "<strong style="color:var(--text);">{{ search_query }}</strong>" — {{ all_users|length }} found
+        </p>
+        {% endif %}
 
         {% if all_users %}
         <table class="admin-table">
@@ -97,18 +114,17 @@
                     <th>Email</th>
                     <th>Joined</th>
                     <th>Verified</th>
+                    <th>Status</th>
                     <th>Role</th>
-                    {% if is_super_admin %}
-                    <th>Actions</th>
-                    {% endif %}
+                    {% if is_super_admin %}<th>Actions</th>{% endif %}
                 </tr>
             </thead>
             <tbody>
                 {% for u in all_users %}
-                <tr>
+                <tr {% if not u.is_active %}style="opacity:0.5;" {% endif %}>
                     <td class="text-muted">{{ u.id }}</td>
                     <td class="text-bold">{{ u.username }}</td>
-                    <td class="text-muted">{{ u.email|default:"—" }}</td>
+                    <td class="text-muted" style="word-break:break-all;">{{ u.email|default:"—" }}</td>
                     <td class="text-muted">{{ u.date_joined|date:"M d, Y" }}</td>
                     <td>
                         {% if u.email_verification.is_verified %}
@@ -117,6 +133,13 @@
                         <span class="text-muted" style="font-size:0.82rem;">Admin</span>
                         {% else %}
                         <span style="color:#fca5a5;font-size:0.82rem;">✗ Pending</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if not u.is_active %}
+                        <span style="color:#fca5a5;font-size:0.82rem;">⛔ Disabled</span>
+                        {% else %}
+                        <span style="color:#6ee7b7;font-size:0.82rem;">● Active</span>
                         {% endif %}
                     </td>
                     <td>
@@ -133,28 +156,33 @@
                         <div class="action-buttons">
                             {% if u.is_superuser %}
                             <span class="text-muted" style="font-size:0.78rem;">—</span>
-                            {% elif u.is_staff %}
+                            {% else %}
+                            {% if u.is_staff %}
                             <form method="post" action="{% url 'demote_user' u.id %}"
                                 onsubmit="return confirm('Demote {{ u.username }} from Staff Admin?')">
-                                {% csrf_token %}
-                                <button type="submit" class="btn-sm btn-demote" title="Demote to User">↓ Demote</button>
-                            </form>
-                            <form method="post" action="{% url 'delete_user' u.id %}"
-                                onsubmit="return confirm('⚠️ Permanently delete {{ u.username }}? This cannot be undone!')">
-                                {% csrf_token %}
-                                <button type="submit" class="btn-sm btn-delete" title="Delete User">✕ Delete</button>
+                                {% csrf_token %}<button type="submit" class="btn-sm btn-demote">↓ Demote</button>
                             </form>
                             {% else %}
                             <form method="post" action="{% url 'promote_user' u.id %}"
                                 onsubmit="return confirm('Promote {{ u.username }} to Staff Admin?')">
-                                {% csrf_token %}
-                                <button type="submit" class="btn-sm btn-promote" title="Promote to Staff">↑
-                                    Promote</button>
+                                {% csrf_token %}<button type="submit" class="btn-sm btn-promote">↑ Promote</button>
                             </form>
+                            {% endif %}
+
+                            {% if u.is_active %}
+                            <form method="post" action="{% url 'disable_user' u.id %}"
+                                onsubmit="return confirm('Disable {{ u.username }}? They will not be able to log in.')">
+                                {% csrf_token %}<button type="submit" class="btn-sm btn-demote">⛔ Disable</button>
+                            </form>
+                            {% else %}
+                            <form method="post" action="{% url 'enable_user' u.id %}">
+                                {% csrf_token %}<button type="submit" class="btn-sm btn-promote">✓ Enable</button>
+                            </form>
+                            {% endif %}
+
                             <form method="post" action="{% url 'delete_user' u.id %}"
-                                onsubmit="return confirm('⚠️ Permanently delete {{ u.username }}? This cannot be undone!')">
-                                {% csrf_token %}
-                                <button type="submit" class="btn-sm btn-delete" title="Delete User">✕ Delete</button>
+                                onsubmit="return confirm('⚠️ Permanently delete {{ u.username }}?')">
+                                {% csrf_token %}<button type="submit" class="btn-sm btn-delete">✕ Delete</button>
                             </form>
                             {% endif %}
                         </div>
@@ -165,7 +193,9 @@
             </tbody>
         </table>
         {% else %}
-        <p class="text-muted" style="padding:1rem 0;">No users yet.</p>
+        <p class="text-muted" style="padding:1rem 0;">
+            {% if search_query %}No users match "{{ search_query }}".{% else %}No users yet.{% endif %}
+        </p>
         {% endif %}
     </div>
 
@@ -174,13 +204,13 @@
         <h2>🔑 Role Permissions</h2>
         <div class="info-row">
             <span class="label"><span class="badge-superadmin">👑 Super Admin</span></span>
-            <span class="value" style="font-size:0.85rem;font-weight:400;color:var(--text-muted);">Full access —
-                promote, demote, delete users</span>
+            <span class="value" style="font-size:0.85rem;font-weight:400;color:var(--text-muted);">Promote, demote,
+                disable, delete users</span>
         </div>
         <div class="info-row">
             <span class="label"><span class="badge-staff">🛡️ Staff Admin</span></span>
             <span class="value" style="font-size:0.85rem;font-weight:400;color:var(--text-muted);">View analytics &amp;
-                users — no management</span>
+                users only</span>
         </div>
         <div class="info-row">
             <span class="label"><span class="badge-user">User</span></span>

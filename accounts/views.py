@@ -178,7 +178,11 @@ def admin_panel_view(request):
     superuser_count = User.objects.filter(is_superuser=True).count()
     week_ago       = timezone.now() - timedelta(days=7)
     new_this_week  = User.objects.filter(date_joined__gte=week_ago).count()
+    search_query   = request.GET.get('q', '').strip()
     all_users      = User.objects.order_by('-date_joined')
+    if search_query:
+        all_users = (all_users.filter(username__icontains=search_query)
+                     | User.objects.filter(email__icontains=search_query)).order_by('-date_joined')
 
     context = {
         'total_users':      total_users,
@@ -189,6 +193,7 @@ def admin_panel_view(request):
         'new_this_week':    new_this_week,
         'all_users':        all_users,
         'is_super_admin':   request.user.is_superuser,
+        'search_query':     search_query,
     }
     return render(request, 'accounts/admin_panel.html', context)
 
@@ -239,5 +244,32 @@ def delete_user_view(request, user_id):
         else:
             username = target.username
             target.delete()
-            messages.success(request, f'✅ User "{username}" has been deleted.')
+            messages.success(request, f'\u2705 User "{username}" has been deleted.')
+    return redirect('admin_panel')
+
+
+@user_passes_test(_is_superuser, login_url='/login/')
+def disable_user_view(request, user_id):
+    """Super Admin disables a user (sets is_active=False, blocks login)."""
+    if request.method == 'POST':
+        target = get_object_or_404(User, pk=user_id)
+        if target.pk == request.user.pk:
+            messages.error(request, 'You cannot disable your own account.')
+        elif target.is_superuser:
+            messages.error(request, 'Cannot disable a Super Admin.')
+        else:
+            target.is_active = False
+            target.save()
+            messages.success(request, f'\u26d4 {target.username} has been disabled.')
+    return redirect('admin_panel')
+
+
+@user_passes_test(_is_superuser, login_url='/login/')
+def enable_user_view(request, user_id):
+    """Super Admin re-enables a disabled user."""
+    if request.method == 'POST':
+        target = get_object_or_404(User, pk=user_id)
+        target.is_active = True
+        target.save()
+        messages.success(request, f'\u2705 {target.username} has been re-enabled.')
     return redirect('admin_panel')

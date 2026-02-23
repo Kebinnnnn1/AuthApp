@@ -13,4 +13,7 @@ urlpatterns = [
     path('admin-panel/promote/<int:user_id>/', views.promote_user_view, name='promote_user'),
     path('admin-panel/demote/<int:user_id>/', views.demote_user_view, name='demote_user'),
     path('admin-panel/delete/<int:user_id>/', views.delete_user_view, name='delete_user'),
+    path('admin-panel/disable/<int:user_id>/', views.disable_user_view, name='disable_user'),
+    path('admin-panel/enable/<int:user_id>/', views.enable_user_view, name='enable_user'),
 ]
+
