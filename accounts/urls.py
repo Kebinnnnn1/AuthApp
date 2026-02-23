@@ -15,5 +15,10 @@ urlpatterns = [
     path('admin-panel/delete/<int:user_id>/', views.delete_user_view, name='delete_user'),
     path('admin-panel/disable/<int:user_id>/', views.disable_user_view, name='disable_user'),
     path('admin-panel/enable/<int:user_id>/', views.enable_user_view, name='enable_user'),
+    # Game
+    path('game/', views.game_view, name='game'),
+    path('game/submit/', views.submit_score_view, name='submit_score'),
+    path('leaderboard/', views.leaderboard_view, name='leaderboard'),
 ]
+
 

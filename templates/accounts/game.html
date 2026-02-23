@@ -1,0 +1,242 @@
+{% extends 'base.html' %}
+{% block title %}Click Blitz · AuthApp{% endblock %}
+{% block content %}
+<div class="dashboard-container" style="max-width:700px;">
+
+    <div class="dashboard-header">
+        <div class="greeting-badge">🎮 Mini Game</div>
+        <h1><span>Click Blitz</span></h1>
+        <p class="subtitle">Click the targets before they vanish — 30 seconds, how high can you score?</p>
+    </div>
+
+    <!-- HUD -->
+    <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1.25rem;">
+        <div class="stat-card" style="flex:1;min-width:100px;">
+            <div class="stat-icon">🎯</div>
+            <div class="stat-info">
+                <h3 id="score-display">0</h3>
+                <p>Score</p>
+            </div>
+        </div>
+        <div class="stat-card" style="flex:1;min-width:100px;">
+            <div class="stat-icon">⏱️</div>
+            <div class="stat-info">
+                <h3 id="time-display">30</h3>
+                <p>Seconds</p>
+            </div>
+        </div>
+        <div class="stat-card" style="flex:1;min-width:100px;">
+            <div class="stat-icon">🏆</div>
+            <div class="stat-info">
+                <h3 id="best-display">{{ user_best.score|default:"—" }}</h3>
+                <p>Your Best</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Arena -->
+    <div id="game-arena" style="
+        position:relative;
+        width:100%;
+        height:380px;
+        background:rgba(99,102,241,0.04);
+        border:2px solid var(--border);
+        border-radius:var(--radius);
+        overflow:hidden;
+        cursor:crosshair;
+        user-select:none;
+        touch-action:none;
+    ">
+        <!-- State overlays -->
+        <div id="overlay-start" style="
+            position:absolute;inset:0;display:flex;flex-direction:column;
+            align-items:center;justify-content:center;gap:1.25rem;
+            background:rgba(15,15,26,0.88);z-index:10;
+        ">
+            <div style="font-size:3.5rem;">🎯</div>
+            <p style="color:var(--text-muted);font-size:0.95rem;text-align:center;max-width:260px;">
+                Click every target before it disappears. Faster clicks = more points!
+            </p>
+            <button id="btn-start" onclick="startGame()" style="
+                background:var(--primary);color:#fff;border:none;
+                padding:0.85rem 2.5rem;border-radius:12px;font-size:1rem;
+                font-weight:700;cursor:pointer;font-family:inherit;
+                transition:transform 0.15s,background 0.15s;
+            " onmouseover="this.style.background='var(--primary-dark)'"
+                onmouseout="this.style.background='var(--primary)'">
+                ▶ Start Game
+            </button>
+        </div>
+
+        <div id="overlay-end" style="
+            position:absolute;inset:0;display:none;flex-direction:column;
+            align-items:center;justify-content:center;gap:1rem;
+            background:rgba(15,15,26,0.92);z-index:10;
+        ">
+            <div style="font-size:3rem;">🏁</div>
+            <p style="font-size:1.5rem;font-weight:800;color:var(--text);">
+                Score: <span id="final-score" style="color:var(--primary-light);">0</span>
+            </p>
+            <p id="new-best-msg" style="color:#6ee7b7;font-weight:600;display:none;">🎉 New Personal Best!</p>
+            <div style="display:flex;gap:0.75rem;flex-wrap:wrap;justify-content:center;">
+                <button onclick="startGame()" style="
+                    background:var(--primary);color:#fff;border:none;
+                    padding:0.75rem 1.75rem;border-radius:10px;font-weight:700;
+                    cursor:pointer;font-family:inherit;font-size:0.9rem;
+                ">▶ Play Again</button>
+                <a href="{% url 'leaderboard' %}" style="
+                    display:inline-flex;align-items:center;
+                    background:rgba(99,102,241,0.12);color:var(--primary-light);
+                    border:1px solid rgba(99,102,241,0.35);
+                    padding:0.75rem 1.75rem;border-radius:10px;font-weight:700;
+                    text-decoration:none;font-size:0.9rem;
+                ">🏆 Leaderboard</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Nav -->
+    <div style="display:flex;gap:0.75rem;margin-top:1.5rem;flex-wrap:wrap;">
+        <a href="{% url 'leaderboard' %}" class="btn btn-outline"
+            style="width:auto;padding:0.6rem 1.2rem;font-size:0.9rem;">🏆 Leaderboard</a>
+        <a href="{% url 'dashboard' %}" class="btn btn-outline"
+            style="width:auto;padding:0.6rem 1.2rem;font-size:0.9rem;">← Dashboard</a>
+    </div>
+
+</div>
+
+<script>
+    const CSRF = '{{ csrf_token }}';
+    const SUBMIT_URL = '{% url "submit_score" %}';
+
+    let score = 0, timeLeft = 30, running = false;
+    let timer = null, spawnTimer = null, targets = [];
+    let prevBest = {{ user_best.score|default: "null" }};
+
+    const arena = document.getElementById('game-arena');
+    const scoreDsp = document.getElementById('score-display');
+    const timeDsp = document.getElementById('time-display');
+    const bestDsp = document.getElementById('best-display');
+    const overlayEnd = document.getElementById('overlay-end');
+    const finalScore = document.getElementById('final-score');
+    const newBestMsg = document.getElementById('new-best-msg');
+    const overStart = document.getElementById('overlay-start');
+
+    function startGame() {
+        // Reset
+        score = 0; timeLeft = 30; running = true;
+        targets.forEach(t => t.el.remove()); targets = [];
+        scoreDsp.textContent = 0; timeDsp.textContent = 30;
+        overStart.style.display = 'none';
+        overlayEnd.style.display = 'none';
+        newBestMsg.style.display = 'none';
+
+        // Countdown timer
+        clearInterval(timer);
+        timer = setInterval(() => {
+            timeLeft--;
+            timeDsp.textContent = timeLeft;
+            if (timeLeft <= 5) timeDsp.style.color = '#fca5a5';
+            if (timeLeft <= 0) endGame();
+        }, 1000);
+
+        // Spawn targets
+        clearInterval(spawnTimer);
+        spawnTarget();
+        spawnTimer = setInterval(spawnTarget, 900);
+    }
+
+    function spawnTarget() {
+        if (!running) return;
+        const size = Math.floor(Math.random() * 30 + 38); // 38–68px
+        const el = document.createElement('div');
+        const arenaRect = arena.getBoundingClientRect();
+        const x = Math.random() * (arenaRect.width - size - 10) + 5;
+        const y = Math.random() * (arenaRect.height - size - 10) + 5;
+        const life = Math.random() * 900 + 900; // 900–1800ms
+        const hue = Math.floor(Math.random() * 60) + 220; // blue-purple
+
+        el.style.cssText = `
+        position:absolute;left:${x}px;top:${y}px;
+        width:${size}px;height:${size}px;border-radius:50%;
+        background:hsl(${hue},80%,60%);
+        box-shadow:0 0 18px hsl(${hue},80%,60%,0.5);
+        cursor:pointer;user-select:none;touch-action:manipulation;
+        transition:transform 0.1s,opacity 0.2s;
+        animation:popIn 0.15s ease;
+    `;
+
+        const id = Date.now() + Math.random();
+        const obj = { el, id };
+        targets.push(obj);
+
+        el.addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            if (!running) return;
+            score++;
+            scoreDsp.textContent = score;
+            el.style.transform = 'scale(1.3)';
+            el.style.opacity = '0';
+            setTimeout(() => el.remove(), 180);
+            targets = targets.filter(t => t.id !== id);
+        });
+
+        arena.appendChild(el);
+
+        // Auto-expire
+        setTimeout(() => {
+            if (!running) return;
+            const stillThere = targets.find(t => t.id === id);
+            if (stillThere) {
+                el.style.opacity = '0';
+                setTimeout(() => el.remove(), 180);
+                targets = targets.filter(t => t.id !== id);
+            }
+        }, life);
+    }
+
+    function endGame() {
+        running = false;
+        clearInterval(timer);
+        clearInterval(spawnTimer);
+        targets.forEach(t => { t.el.style.opacity = '0'; setTimeout(() => t.el.remove(), 180); });
+        targets = [];
+        timeDsp.style.color = '';
+
+        finalScore.textContent = score;
+        overlayEnd.style.display = 'flex';
+
+        // Save score
+        fetch(SUBMIT_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+            body: JSON.stringify({ score })
+        })
+            .then(r => r.json())
+            .then(data => {
+                if (data.best !== undefined) {
+                    bestDsp.textContent = data.best;
+                    if (prevBest === null || data.best > prevBest) {
+                        newBestMsg.style.display = 'block';
+                        prevBest = data.best;
+                    }
+                }
+            })
+            .catch(() => { }); // silently ignore network errors
+    }
+</script>
+
+<style>
+    @keyframes popIn {
+        from {
+            transform: scale(0);
+            opacity: 0;
+        }
+
+        to {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+</style>
+{% endblock %}

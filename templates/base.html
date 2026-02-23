@@ -34,6 +34,8 @@
                 </span>
             </li>
             <li><a href="{% url 'dashboard' %}">Dashboard</a></li>
+            <li><a href="{% url 'game' %}">🎮 Game</a></li>
+            <li><a href="{% url 'leaderboard' %}">🏆 Scores</a></li>
             {% if user.is_staff %}
             <li><a href="{% url 'admin_panel' %}" class="btn-nav btn-nav-outline">🛡️ Admin Panel</a></li>
             {% endif %}

@@ -21,3 +21,16 @@ class EmailVerification(models.Model):
     def regenerate_code(self):
         self.code = generate_code()
         self.save()
+
+
+class GameScore(models.Model):
+    user       = models.ForeignKey(User, on_delete=models.CASCADE, related_name='scores')
+    score      = models.IntegerField()
+    achieved_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-score', 'achieved_at']
+
+    def __str__(self):
+        return f'{self.user.username} — {self.score} pts'
+

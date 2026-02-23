@@ -7,7 +7,7 @@ from django.utils import timezone
 from datetime import timedelta
 
 from .forms import SignUpForm, LoginForm, VerifyEmailForm
-from .models import EmailVerification
+from .models import EmailVerification, GameScore
 
 
 # ── helpers ──────────────────────────────────────────────────────────────────
@@ -273,3 +273,46 @@ def enable_user_view(request, user_id):
         target.save()
         messages.success(request, f'\u2705 {target.username} has been re-enabled.')
     return redirect('admin_panel')
+
+
+# ── game ──────────────────────────────────────────────────────────────────────
+
+import json
+
+@login_required
+def game_view(request):
+    """Render the mini game page."""
+    user_best = GameScore.objects.filter(user=request.user).order_by('-score').first()
+    return render(request, 'accounts/game.html', {'user_best': user_best})
+
+
+@login_required
+def submit_score_view(request):
+    """Receive a JSON POST with the player's score and save it."""
+    if request.method != 'POST':
+        from django.http import JsonResponse
+        return JsonResponse({'error': 'POST required'}, status=405)
+    from django.http import JsonResponse
+    try:
+        data  = json.loads(request.body)
+        score = int(data.get('score', 0))
+        if score < 0:
+            return JsonResponse({'error': 'Invalid score'}, status=400)
+        GameScore.objects.create(user=request.user, score=score)
+        user_best = GameScore.objects.filter(user=request.user).order_by('-score').first()
+        return JsonResponse({'ok': True, 'best': user_best.score if user_best else score})
+    except (ValueError, KeyError, json.JSONDecodeError):
+        return JsonResponse({'error': 'Bad data'}, status=400)
+
+
+def leaderboard_view(request):
+    """Show top 20 scores across all users."""
+    top_scores = GameScore.objects.select_related('user').order_by('-score')[:20]
+    user_best  = None
+    if request.user.is_authenticated:
+        user_best = GameScore.objects.filter(user=request.user).order_by('-score').first()
+    return render(request, 'accounts/leaderboard.html', {
+        'top_scores': top_scores,
+        'user_best':  user_best,
+    })
+
