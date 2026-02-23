@@ -3,8 +3,6 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
 from django.contrib import messages
-from django.core.mail import send_mail
-from django.conf import settings
 from django.utils import timezone
 from datetime import timedelta
 
@@ -36,32 +34,15 @@ def signup_view(request):
             # Create verification record
             verification = EmailVerification.objects.create(user=user)
 
-            # Send the code
-            try:
-                send_mail(
-                    subject='Your AuthApp verification code',
-                    message=(
-                        f'Hi {user.username},\n\n'
-                        f'Your 6-digit verification code is:\n\n'
-                        f'  {verification.code}\n\n'
-                        f'Enter this code at the verification page to activate your account.\n\n'
-                        f'\u2014 The AuthApp Team'
-                    ),
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[user.email],
-                    fail_silently=True,
-                )
-            except BaseException:
-                # Catches SystemExit from smtplib port blocks + all other errors
-                # User can still verify — code is visible in Railway logs
-                pass
+            # Print code to server logs (visible in Railway deploy logs)
+            print(f'[verify] Code for {user.username} ({user.email}): {verification.code}')
 
             # Store user id in session so verify view knows who to verify
             request.session['pending_verification_user_id'] = user.pk
             messages.info(
                 request,
-                f'A 6-digit code was sent to {user.email}. '
-                f'(If no email arrives, check the server terminal.)'
+                f'Your 6-digit verification code is: {verification.code} '
+                f'(Also visible in server logs if needed.)'
             )
             return redirect('verify_email')
         else:
@@ -123,22 +104,11 @@ def resend_code_view(request):
     try:
         verification = EmailVerification.objects.get(user=user)
         verification.regenerate_code()
-        try:
-            send_mail(
-                subject='Your new AuthApp verification code',
-                message=(
-                    f'Hi {user.username},\n\n'
-                    f'Your new 6-digit code is:\n\n'
-                    f'  {verification.code}\n\n'
-                    f'\u2014 The AuthApp Team'
-                ),
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[user.email],
-                fail_silently=True,
-            )
-        except BaseException:
-            pass  # SMTP failure must not crash the page
-        messages.success(request, f'A new code was sent to {user.email}.')
+        print(f'[verify] New code for {user.username} ({user.email}): {verification.code}')
+        messages.success(
+            request,
+            f'New code generated: {verification.code}'
+        )
     except EmailVerification.DoesNotExist:
         messages.error(request, 'No verification record found.')
 

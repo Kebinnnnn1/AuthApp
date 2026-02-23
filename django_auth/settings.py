@@ -94,29 +94,10 @@ LOGIN_REDIRECT_URL = '/dashboard/'
 LOGOUT_REDIRECT_URL = '/'
 
 # ─────────────────────────────────────────────
-# EMAIL CONFIGURATION (SendGrid SMTP)
+# EMAIL — Console backend only
 # ─────────────────────────────────────────────
-# Set these in Railway:
-#   EMAIL_HOST_USER     = apikey          ← literally the word "apikey"
-#   EMAIL_HOST_PASSWORD = SG.xxxxx...     ← your SendGrid API key
-#   DEFAULT_FROM_EMAIL  = you@yourdomain.com  ← verified sender in SendGrid
-#
-_smtp_user = os.environ.get('EMAIL_HOST_USER', '').strip()
-_smtp_pass = os.environ.get('EMAIL_HOST_PASSWORD', '').strip()
-_from_email = os.environ.get('DEFAULT_FROM_EMAIL', '').strip()
-
-if _smtp_user and _smtp_pass:
-    EMAIL_BACKEND       = 'django.core.mail.backends.smtp.EmailBackend'
-    EMAIL_HOST          = os.environ.get('EMAIL_HOST', 'smtp.sendgrid.net')
-    EMAIL_PORT          = int(os.environ.get('EMAIL_PORT', 2525))  # 2525 bypasses Railway's port 587 block
-    EMAIL_USE_TLS       = True
-    EMAIL_HOST_USER     = _smtp_user
-    EMAIL_HOST_PASSWORD = _smtp_pass
-    DEFAULT_FROM_EMAIL  = _from_email or f'AuthApp <{_smtp_user}>'
-    EMAIL_TIMEOUT       = 10
-    print(f'[email] ✅ SMTP ready: host={EMAIL_HOST} user={_smtp_user} from={DEFAULT_FROM_EMAIL}')
-else:
-    EMAIL_BACKEND      = 'django.core.mail.backends.console.EmailBackend'
-    DEFAULT_FROM_EMAIL = 'AuthApp <noreply@authapp.local>'
-    print('[email] ⚠️  No SMTP credentials — verification codes will print to logs only')
+# Verification codes are shown directly on the verify page
+# and printed to Railway logs. No SMTP needed.
+EMAIL_BACKEND      = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = 'AuthApp <noreply@authapp.local>'
 
