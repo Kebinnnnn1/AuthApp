@@ -279,7 +279,11 @@ def game_view(request):
     except Exception as e:
         print(f'[game_view] DB error: {e}')
         user_best = None
-    return render(request, 'accounts/game.html', {'user_best': user_best})
+    try:
+        return render(request, 'accounts/game.html', {'user_best': user_best})
+    except Exception as e:
+        from django.http import HttpResponse
+        return HttpResponse(f'<pre>GAME TEMPLATE ERROR:\n{e}</pre>')
 
 
 @login_required
