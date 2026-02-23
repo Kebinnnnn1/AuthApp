@@ -34,16 +34,9 @@ def signup_view(request):
             # Create verification record
             verification = EmailVerification.objects.create(user=user)
 
-            # Print code to server logs (visible in Railway deploy logs)
-            print(f'[verify] Code for {user.username} ({user.email}): {verification.code}')
-
-            # Store user id in session so verify view knows who to verify
+            # Store user id + code in session so verify view can display it
             request.session['pending_verification_user_id'] = user.pk
-            messages.info(
-                request,
-                f'Your 6-digit verification code is: {verification.code} '
-                f'(Also visible in server logs if needed.)'
-            )
+            request.session['pending_code'] = verification.code
             return redirect('verify_email')
         else:
             messages.error(request, 'Please correct the errors below.')
@@ -89,8 +82,9 @@ def verify_email_view(request):
         form = VerifyEmailForm()
 
     return render(request, 'accounts/verify_email.html', {
-        'form': form,
+        'form':  form,
         'email': user.email,
+        'code':  request.session.get('pending_code'),  # shown on page; cleared on success
     })
 
 
@@ -104,11 +98,8 @@ def resend_code_view(request):
     try:
         verification = EmailVerification.objects.get(user=user)
         verification.regenerate_code()
-        print(f'[verify] New code for {user.username} ({user.email}): {verification.code}')
-        messages.success(
-            request,
-            f'New code generated: {verification.code}'
-        )
+        # Store new code in session so verify page can display it
+        request.session['pending_code'] = verification.code
     except EmailVerification.DoesNotExist:
         messages.error(request, 'No verification record found.')
 

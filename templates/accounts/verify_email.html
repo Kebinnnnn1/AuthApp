@@ -1,20 +1,53 @@
 {% extends 'base.html' %}
 
-{% block title %}Verify Your Email · AuthApp{% endblock %}
+{% block title %}Verify Your Account · AuthApp{% endblock %}
 
 {% block content %}
 <div class="auth-container">
     <div class="auth-card">
         <div class="auth-card-header">
-            <span class="auth-icon">📬</span>
-            <h1>Check Your Email</h1>
-            <p>We sent a 6-digit code to<br><strong style="color:var(--primary-light)">{{ email }}</strong></p>
+            <span class="auth-icon">🔐</span>
+            <h1>Verify Your Account</h1>
+            <p>Your 6-digit code is shown below. Enter it to activate your account.</p>
         </div>
+
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}" style="margin-bottom:1rem;">{{ message }}</div>
+        {% endfor %}
+
+        {% if code %}
+        <!-- Big code display box -->
+        <div style="
+            background: rgba(99,102,241,0.1);
+            border: 2px solid rgba(99,102,241,0.45);
+            border-radius: 14px;
+            padding: 1.5rem 1.25rem;
+            margin-bottom: 1.75rem;
+            text-align: center;
+        ">
+            <p
+                style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:1.5px;font-weight:600;margin-bottom:0.75rem;">
+                Your Verification Code
+            </p>
+            <div style="
+                font-size: 2.8rem;
+                font-weight: 900;
+                letter-spacing: 0.7rem;
+                font-family: 'Courier New', monospace;
+                color: var(--primary-light);
+                line-height: 1;
+                padding: 0.25rem 0;
+            ">{{ code }}</div>
+            <p style="font-size:0.78rem;color:var(--text-muted);margin-top:0.85rem;">
+                Copy this code and paste it in the field below ↓
+            </p>
+        </div>
+        {% endif %}
 
         <form method="post" novalidate>
             {% csrf_token %}
             <div class="form-group">
-                <label for="{{ form.code.id_for_label }}">Verification Code</label>
+                <label for="{{ form.code.id_for_label }}">Enter Code</label>
                 {{ form.code }}
                 {% if form.code.errors %}
                 <div class="field-errors">
@@ -23,14 +56,13 @@
                     {% endfor %}
                 </div>
                 {% endif %}
-                <p class="help-text">Enter the 6-digit code from the email. Check spam if you don't see it.</p>
             </div>
-            <button type="submit" class="btn btn-primary">Verify &amp; Activate Account</button>
+            <button type="submit" class="btn btn-primary">✓ Verify &amp; Activate Account</button>
         </form>
 
         <div class="auth-footer" style="margin-top:1.25rem;">
-            Didn't receive a code?
-            <a href="{% url 'resend_code' %}">Resend code</a>
+            Need a new code?
+            <a href="{% url 'resend_code' %}">Generate a new one</a>
         </div>
         <div class="auth-footer" style="margin-top:0.5rem;">
             <a href="{% url 'signup' %}">← Start over</a>
