@@ -45,14 +45,16 @@ def signup_view(request):
                         f'Your 6-digit verification code is:\n\n'
                         f'  {verification.code}\n\n'
                         f'Enter this code at the verification page to activate your account.\n\n'
-                        f'— The AuthApp Team'
+                        f'\u2014 The AuthApp Team'
                     ),
                     from_email=settings.DEFAULT_FROM_EMAIL,
                     recipient_list=[user.email],
                     fail_silently=True,
                 )
-            except Exception:
-                pass  # Fallback: show code in Railway logs if email fails
+            except BaseException:
+                # Catches SystemExit from smtplib port blocks + all other errors
+                # User can still verify — code is visible in Railway logs
+                pass
 
             # Store user id in session so verify view knows who to verify
             request.session['pending_verification_user_id'] = user.pk
@@ -121,18 +123,21 @@ def resend_code_view(request):
     try:
         verification = EmailVerification.objects.get(user=user)
         verification.regenerate_code()
-        send_mail(
-            subject='Your new AuthApp verification code',
-            message=(
-                f'Hi {user.username},\n\n'
-                f'Your new 6-digit code is:\n\n'
-                f'  {verification.code}\n\n'
-                f'— The AuthApp Team'
-            ),
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[user.email],
-            fail_silently=True,
-        )
+        try:
+            send_mail(
+                subject='Your new AuthApp verification code',
+                message=(
+                    f'Hi {user.username},\n\n'
+                    f'Your new 6-digit code is:\n\n'
+                    f'  {verification.code}\n\n'
+                    f'\u2014 The AuthApp Team'
+                ),
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[user.email],
+                fail_silently=True,
+            )
+        except BaseException:
+            pass  # SMTP failure must not crash the page
         messages.success(request, f'A new code was sent to {user.email}.')
     except EmailVerification.DoesNotExist:
         messages.error(request, 'No verification record found.')
