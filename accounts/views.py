@@ -13,10 +13,26 @@ from .forms import SignUpForm, LoginForm, VerifyEmailForm
 from .models import EmailVerification, GameScore
 
 
-# ── email helper ──────────────────────────────────────────────────────────────
+import smtplib
+import socket
+
 
 def send_verification_email(user, code):
-    """Send a verification code email to the given user."""
+    """
+    Send a 6-digit verification code to the user's email address.
+    Returns True on success, False on failure.
+    Logs detailed info to help diagnose SMTP issues in Railway logs.
+    """
+    host_user = settings.EMAIL_HOST_USER
+    print(f'[EMAIL] Attempting to send verification code to {user.email}')
+    print(f'[EMAIL] SMTP host={settings.EMAIL_HOST} port={settings.EMAIL_PORT} '
+          f'user={host_user!r} password_set={bool(settings.EMAIL_HOST_PASSWORD)}')
+
+    if not host_user or not settings.EMAIL_HOST_PASSWORD:
+        print('[EMAIL] ⚠️  EMAIL_HOST_USER or EMAIL_HOST_PASSWORD is empty — '
+              'check Railway environment variables!')
+        return False
+
     subject = 'Your AuthApp Verification Code'
     message = (
         f'Hi {user.username},\n\n'
@@ -28,6 +44,7 @@ def send_verification_email(user, code):
         f'— The AuthApp Team'
     )
     try:
+        from django.core.mail import send_mail
         send_mail(
             subject,
             message,
@@ -35,9 +52,17 @@ def send_verification_email(user, code):
             [user.email],
             fail_silently=False,
         )
+        print(f'[EMAIL] ✅ Code sent successfully to {user.email}')
+        return True
+    except smtplib.SMTPAuthenticationError as e:
+        print(f'[EMAIL] ❌ SMTP Authentication failed — wrong email/App Password? {e}')
+    except smtplib.SMTPException as e:
+        print(f'[EMAIL] ❌ SMTP error: {e}')
+    except socket.timeout:
+        print('[EMAIL] ❌ SMTP connection timed out — Railway may be blocking port 587')
     except Exception as e:
-        # Log the error but don't crash the signup flow
-        print(f'[send_verification_email] Failed to send email: {e}')
+        print(f'[EMAIL] ❌ Unexpected error: {type(e).__name__}: {e}')
+    return False
 
 
 # ── helpers ──────────────────────────────────────────────────────────────────
@@ -61,16 +86,27 @@ def signup_view(request):
         if form.is_valid():
             user = form.save()  # saves with is_active=False
 
-            # Create verification record and send the code via email
+            # Create verification record and attempt to send code by email
             verification = EmailVerification.objects.create(user=user)
-            send_verification_email(user, verification.code)
+            email_sent = send_verification_email(user, verification.code)
 
-            # Store only the user id in session (code is NOT stored/displayed)
+            # Always store user id so verify page works
             request.session['pending_verification_user_id'] = user.pk
-            messages.info(
-                request,
-                f'A verification code has been sent to {user.email}. Please check your inbox (and spam folder).'
-            )
+
+            if email_sent:
+                messages.info(
+                    request,
+                    f'📧 A verification code has been sent to {user.email}. '
+                    f'Check your inbox (and spam folder).'
+                )
+            else:
+                # SMTP failed — show the code directly on the verify page
+                request.session['pending_code'] = verification.code
+                messages.warning(
+                    request,
+                    f'⚠️ Could not send an email to {user.email} right now. '
+                    f'Your code is shown below instead — please copy it before closing this page.'
+                )
             return redirect('verify_email')
         else:
             messages.error(request, 'Please correct the errors below.')
@@ -116,8 +152,9 @@ def verify_email_view(request):
         form = VerifyEmailForm()
 
     return render(request, 'accounts/verify_email.html', {
-        'form':  form,
-        'email': user.email,
+        'form':         form,
+        'email':        user.email,
+        'fallback_code': request.session.pop('pending_code', None),
     })
 
 
@@ -131,11 +168,19 @@ def resend_code_view(request):
     try:
         verification = EmailVerification.objects.get(user=user)
         verification.regenerate_code()
-        send_verification_email(user, verification.code)
-        messages.info(
-            request,
-            f'A new verification code has been sent to {user.email}.'
-        )
+        email_sent = send_verification_email(user, verification.code)
+
+        if email_sent:
+            messages.info(
+                request,
+                f'📧 A new verification code has been sent to {user.email}.'
+            )
+        else:
+            request.session['pending_code'] = verification.code
+            messages.warning(
+                request,
+                f'⚠️ Email delivery failed. Your new code is shown below — copy it before closing.'
+            )
     except EmailVerification.DoesNotExist:
         messages.error(request, 'No verification record found.')
 
