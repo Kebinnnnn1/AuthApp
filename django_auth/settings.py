@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'anymail',
     'accounts',
 ]
 
@@ -93,17 +94,12 @@ LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/dashboard/'
 LOGOUT_REDIRECT_URL = '/'
 
-# ─────────────────────────────────────────────
-# EMAIL — GMass SMTP Relay
-# Port 465/SSL used because Railway blocks 25, 587, 2525
-# ─────────────────────────────────────────────
-EMAIL_BACKEND       = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST          = 'smtp.gmass.co'
-EMAIL_PORT          = 465
-EMAIL_USE_TLS       = False   # STARTTLS is off; we use direct SSL below
-EMAIL_USE_SSL       = True    # Wraps entire connection in SSL from the start
-EMAIL_TIMEOUT       = 15      # seconds
-EMAIL_HOST_USER     = os.environ.get('EMAIL_HOST_USER', 'gmass')
-EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
-# From address must be the Gmail account linked to GMass, NOT the SMTP username
-DEFAULT_FROM_EMAIL  = f'AuthApp <{os.environ.get("DEFAULT_FROM_EMAIL", os.environ.get("GMAIL_ADDRESS", "noreply@authapp.local"))}>'
+# ─────────────────────────────────────────────────────────────────────────────
+# EMAIL — Brevo HTTP API (via django-anymail)
+# Uses HTTPS port 443 — not affected by Railway's SMTP port blocks
+# ─────────────────────────────────────────────────────────────────────────────
+EMAIL_BACKEND   = 'anymail.backends.brevo.EmailBackend'
+ANYMAIL = {
+    'BREVO_API_KEY': os.environ.get('BREVO_API_KEY', ''),
+}
+DEFAULT_FROM_EMAIL = f'AuthApp <{os.environ.get("DEFAULT_FROM_EMAIL", "noreply@authapp.local")}>'
