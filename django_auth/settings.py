@@ -94,13 +94,14 @@ LOGIN_REDIRECT_URL = '/dashboard/'
 LOGOUT_REDIRECT_URL = '/'
 
 # ─────────────────────────────────────────────
-# EMAIL — Gmail SMTP
+# EMAIL — GMass SMTP Relay
 # ─────────────────────────────────────────────
 EMAIL_BACKEND       = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST          = 'smtp.gmail.com'
+EMAIL_HOST          = 'smtp.gmass.co'
 EMAIL_PORT          = 587
 EMAIL_USE_TLS       = True
-EMAIL_TIMEOUT       = 10          # seconds — prevent hanging the web worker
-EMAIL_HOST_USER     = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_TIMEOUT       = 15          # seconds
+EMAIL_HOST_USER     = os.environ.get('EMAIL_HOST_USER', 'gmass')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
-DEFAULT_FROM_EMAIL  = f'AuthApp <{os.environ.get("EMAIL_HOST_USER", "noreply@authapp.local")}>'
+# From address must be the Gmail account linked to GMass, NOT the SMTP username
+DEFAULT_FROM_EMAIL  = f'AuthApp <{os.environ.get("DEFAULT_FROM_EMAIL", os.environ.get("GMAIL_ADDRESS", "noreply@authapp.local"))}>'
