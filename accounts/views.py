@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect, get_object_or_404
+﻿from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
@@ -13,24 +13,17 @@ from .forms import SignUpForm, LoginForm, VerifyEmailForm
 from .models import EmailVerification, GameScore
 
 
-import smtplib
-import socket
-
-
 def send_verification_email(user, code):
     """
-    Send a 6-digit verification code to the user's email address.
+    Send a 6-digit verification code via Brevo HTTP API (django-anymail).
     Returns True on success, False on failure.
-    Logs detailed info to help diagnose SMTP issues in Railway logs.
     """
-    host_user = settings.EMAIL_HOST_USER
+    api_key = settings.ANYMAIL.get('BREVO_API_KEY', '')
     print(f'[EMAIL] Attempting to send verification code to {user.email}')
-    print(f'[EMAIL] SMTP host={settings.EMAIL_HOST} port={settings.EMAIL_PORT} '
-          f'user={host_user!r} password_set={bool(settings.EMAIL_HOST_PASSWORD)}')
+    print(f'[EMAIL] Backend={settings.EMAIL_BACKEND} api_key_set={bool(api_key)}')
 
-    if not host_user or not settings.EMAIL_HOST_PASSWORD:
-        print('[EMAIL] ⚠️  EMAIL_HOST_USER or EMAIL_HOST_PASSWORD is empty — '
-              'check Railway environment variables!')
+    if not api_key:
+        print('[EMAIL] WARNING: BREVO_API_KEY is empty - add it in Railway environment variables!')
         return False
 
     subject = 'Your AuthApp Verification Code'
@@ -41,7 +34,7 @@ def send_verification_email(user, code):
         f'Enter this code on the verification page to activate your account.\n'
         f'This code is valid for your current session only.\n\n'
         f'If you did not create an account, you can ignore this email.\n\n'
-        f'— The AuthApp Team'
+        f'- The AuthApp Team'
     )
     try:
         from django.core.mail import send_mail
@@ -52,18 +45,11 @@ def send_verification_email(user, code):
             [user.email],
             fail_silently=False,
         )
-        print(f'[EMAIL] ✅ Code sent successfully to {user.email}')
+        print(f'[EMAIL] OK Code sent successfully to {user.email}')
         return True
-    except smtplib.SMTPAuthenticationError as e:
-        print(f'[EMAIL] ❌ SMTP Authentication failed — wrong email/App Password? {e}')
-    except smtplib.SMTPException as e:
-        print(f'[EMAIL] ❌ SMTP error: {e}')
-    except socket.timeout:
-        print(f'[EMAIL] ❌ SMTP connection timed out on port {settings.EMAIL_PORT} — '
-              f'Railway may be blocking this port')
     except Exception as e:
-        print(f'[EMAIL] ❌ Unexpected error: {type(e).__name__}: {e}')
-    return False
+        print(f'[EMAIL] FAILED: {type(e).__name__}: {e}')
+        return False
 
 
 # ── helpers ──────────────────────────────────────────────────────────────────
