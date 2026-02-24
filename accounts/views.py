@@ -59,7 +59,8 @@ def send_verification_email(user, code):
     except smtplib.SMTPException as e:
         print(f'[EMAIL] ❌ SMTP error: {e}')
     except socket.timeout:
-        print('[EMAIL] ❌ SMTP connection timed out — Railway may be blocking port 587')
+        print(f'[EMAIL] ❌ SMTP connection timed out on port {settings.EMAIL_PORT} — '
+              f'Railway may be blocking this port')
     except Exception as e:
         print(f'[EMAIL] ❌ Unexpected error: {type(e).__name__}: {e}')
     return False

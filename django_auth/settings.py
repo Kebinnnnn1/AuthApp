@@ -95,13 +95,14 @@ LOGOUT_REDIRECT_URL = '/'
 
 # ─────────────────────────────────────────────
 # EMAIL — GMass SMTP Relay
-# Port 2525 is used because Railway blocks 25 and 587
+# Port 465/SSL used because Railway blocks 25, 587, 2525
 # ─────────────────────────────────────────────
 EMAIL_BACKEND       = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST          = 'smtp.gmass.co'
-EMAIL_PORT          = 2525
-EMAIL_USE_TLS       = True
-EMAIL_TIMEOUT       = 15          # seconds
+EMAIL_PORT          = 465
+EMAIL_USE_TLS       = False   # STARTTLS is off; we use direct SSL below
+EMAIL_USE_SSL       = True    # Wraps entire connection in SSL from the start
+EMAIL_TIMEOUT       = 15      # seconds
 EMAIL_HOST_USER     = os.environ.get('EMAIL_HOST_USER', 'gmass')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 # From address must be the Gmail account linked to GMass, NOT the SMTP username
