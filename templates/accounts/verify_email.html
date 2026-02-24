@@ -7,7 +7,7 @@
         <div class="auth-card-header">
             <span class="auth-icon">🔐</span>
             <h1>Verify Your Account</h1>
-            <p>Your verification code has been generated below.</p>
+            <p>We sent a 6-digit code to <strong>{{ email }}</strong>.<br>Check your inbox (and spam folder) and enter it below.</p>
         </div>
 
         {% for message in messages %}
@@ -31,7 +31,7 @@
         </form>
 
         <div class="auth-footer" style="margin-top:1.25rem;">
-            Need a new code? <a href="{% url 'resend_code' %}">Generate a new one</a>
+            Didn't get it? <a href="{% url 'resend_code' %}">Resend a new code</a>
         </div>
         <div class="auth-footer" style="margin-top:0.5rem;">
             <a href="{% url 'signup' %}">← Start over</a>
@@ -39,171 +39,4 @@
     </div>
 </div>
 
-{% if code %}
-<!-- Pop-out modal overlay -->
-<div id="code-overlay" style="
-    position:fixed;inset:0;z-index:1000;
-    display:flex;align-items:center;justify-content:center;
-    background:rgba(0,0,0,0.65);
-    backdrop-filter:blur(6px);
-    animation:fadeInOverlay 0.35s ease;
-" onclick="dismissCodePopup()">
-
-    <div id="code-modal" style="
-        background:linear-gradient(135deg,rgba(30,30,60,0.98),rgba(20,20,45,0.98));
-        border:2px solid rgba(99,102,241,0.6);
-        border-radius:20px;
-        padding:2.5rem 2.5rem 2rem;
-        text-align:center;
-        max-width:380px;
-        width:90%;
-        box-shadow:0 0 60px rgba(99,102,241,0.35), 0 20px 60px rgba(0,0,0,0.5);
-        animation:popOut 0.5s cubic-bezier(0.34,1.56,0.64,1);
-        position:relative;
-    " onclick="event.stopPropagation()">
-
-        <!-- Glow ring -->
-        <div style="
-            width:72px;height:72px;border-radius:50%;
-            background:rgba(99,102,241,0.15);
-            border:2px solid rgba(99,102,241,0.5);
-            display:flex;align-items:center;justify-content:center;
-            margin:0 auto 1.25rem;
-            font-size:2rem;
-            animation:pulseGlow 2s ease infinite;
-        ">🔑</div>
-
-        <p style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;
-                  letter-spacing:2px;font-weight:700;margin-bottom:0.6rem;">
-            Your Verification Code
-        </p>
-
-        <!-- Big code display -->
-        <div id="code-display" style="
-            font-size:3rem;
-            font-weight:900;
-            letter-spacing:0.75rem;
-            font-family:'Courier New',monospace;
-            color:var(--primary-light);
-            padding:0.75rem 0.5rem;
-            background:rgba(99,102,241,0.08);
-            border-radius:12px;
-            border:1px solid rgba(99,102,241,0.2);
-            margin-bottom:0.75rem;
-            cursor:pointer;
-            transition:background 0.2s;
-            user-select:all;
-        " title="Click to copy" onclick="copyCode()">{{ code }}</div>
-
-        <p id="copy-hint" style="font-size:0.78rem;color:var(--text-muted);margin-bottom:1.5rem;">
-            Click the code to copy it ↑
-        </p>
-
-        <button onclick="dismissCodePopup()" style="
-            background:var(--primary);color:#fff;border:none;
-            padding:0.75rem 2rem;border-radius:12px;font-weight:700;
-            cursor:pointer;font-family:inherit;font-size:0.95rem;
-            transition:transform 0.15s;width:100%;
-        " onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
-            OK, I have it ✓
-        </button>
-
-        <p style="font-size:0.72rem;color:var(--text-muted);margin-top:0.85rem;">
-            This code is only visible to you. Keep it safe.
-        </p>
-    </div>
-</div>
-
-<script>
-    function copyCode() {
-        var codeEl = document.getElementById('code-display');
-        var hint = document.getElementById('copy-hint');
-        var text = codeEl.innerText.trim();
-        if (navigator.clipboard) {
-            navigator.clipboard.writeText(text).then(function () {
-                hint.textContent = '✓ Copied!';
-                hint.style.color = '#6ee7b7';
-                codeEl.style.background = 'rgba(110,231,183,0.1)';
-            });
-        } else {
-            var r = document.createRange();
-            r.selectNodeContents(codeEl);
-            window.getSelection().addRange(r);
-            document.execCommand('copy');
-            hint.textContent = '✓ Copied!';
-            hint.style.color = '#6ee7b7';
-        }
-    }
-
-    function dismissCodePopup() {
-        var overlay = document.getElementById('code-overlay');
-        overlay.style.animation = 'fadeOutOverlay 0.25s ease forwards';
-        setTimeout(function () { overlay.style.display = 'none'; }, 250);
-    }
-</script>
-{% endif %}
-
-<style>
-    @keyframes fadeInOverlay {
-        from {
-            opacity: 0;
-        }
-
-        to {
-            opacity: 1;
-        }
-    }
-
-    @keyframes fadeOutOverlay {
-        from {
-            opacity: 1;
-        }
-
-        to {
-            opacity: 0;
-        }
-    }
-
-    @keyframes popOut {
-        0% {
-            transform: scale(0.4) translateY(40px);
-            opacity: 0;
-        }
-
-        60% {
-            transform: scale(1.04) translateY(-4px);
-            opacity: 1;
-        }
-
-        80% {
-            transform: scale(0.98) translateY(2px);
-        }
-
-        100% {
-            transform: scale(1) translateY(0);
-            opacity: 1;
-        }
-    }
-
-    @keyframes pulseGlow {
-
-        0%,
-        100% {
-            box-shadow: 0 0 0 rgba(99, 102, 241, 0.4);
-        }
-
-        50% {
-            box-shadow: 0 0 20px rgba(99, 102, 241, 0.6);
-        }
-    }
-
-    .code-input {
-        font-size: 2rem;
-        letter-spacing: 0.5rem;
-        text-align: center;
-        font-weight: 700;
-        font-family: monospace;
-        padding: 1rem;
-    }
-</style>
 {% endblock %}

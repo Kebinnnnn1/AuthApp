@@ -3,12 +3,41 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
 from django.contrib import messages
+from django.core.mail import send_mail
+from django.conf import settings
 from django.http import JsonResponse
 from django.utils import timezone
 from datetime import timedelta
 
 from .forms import SignUpForm, LoginForm, VerifyEmailForm
 from .models import EmailVerification, GameScore
+
+
+# ── email helper ──────────────────────────────────────────────────────────────
+
+def send_verification_email(user, code):
+    """Send a verification code email to the given user."""
+    subject = 'Your AuthApp Verification Code'
+    message = (
+        f'Hi {user.username},\n\n'
+        f'Your 6-digit verification code is:\n\n'
+        f'    {code}\n\n'
+        f'Enter this code on the verification page to activate your account.\n'
+        f'This code is valid for your current session only.\n\n'
+        f'If you did not create an account, you can ignore this email.\n\n'
+        f'— The AuthApp Team'
+    )
+    try:
+        send_mail(
+            subject,
+            message,
+            settings.DEFAULT_FROM_EMAIL,
+            [user.email],
+            fail_silently=False,
+        )
+    except Exception as e:
+        # Log the error but don't crash the signup flow
+        print(f'[send_verification_email] Failed to send email: {e}')
 
 
 # ── helpers ──────────────────────────────────────────────────────────────────
@@ -32,12 +61,16 @@ def signup_view(request):
         if form.is_valid():
             user = form.save()  # saves with is_active=False
 
-            # Create verification record
+            # Create verification record and send the code via email
             verification = EmailVerification.objects.create(user=user)
+            send_verification_email(user, verification.code)
 
-            # Store user id + code in session so verify view can display it
+            # Store only the user id in session (code is NOT stored/displayed)
             request.session['pending_verification_user_id'] = user.pk
-            request.session['pending_code'] = verification.code
+            messages.info(
+                request,
+                f'A verification code has been sent to {user.email}. Please check your inbox (and spam folder).'
+            )
             return redirect('verify_email')
         else:
             messages.error(request, 'Please correct the errors below.')
@@ -85,12 +118,11 @@ def verify_email_view(request):
     return render(request, 'accounts/verify_email.html', {
         'form':  form,
         'email': user.email,
-        'code':  request.session.get('pending_code'),  # shown on page; cleared on success
     })
 
 
 def resend_code_view(request):
-    """Regenerate and resend the verification code."""
+    """Regenerate and resend the verification code via email."""
     user_id = request.session.get('pending_verification_user_id')
     if not user_id:
         return redirect('signup')
@@ -99,8 +131,11 @@ def resend_code_view(request):
     try:
         verification = EmailVerification.objects.get(user=user)
         verification.regenerate_code()
-        # Store new code in session so verify page can display it
-        request.session['pending_code'] = verification.code
+        send_verification_email(user, verification.code)
+        messages.info(
+            request,
+            f'A new verification code has been sent to {user.email}.'
+        )
     except EmailVerification.DoesNotExist:
         messages.error(request, 'No verification record found.')
 

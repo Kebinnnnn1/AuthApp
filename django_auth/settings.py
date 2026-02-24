@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 
 import dj_database_url
+from decouple import config, Csv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -94,10 +95,12 @@ LOGIN_REDIRECT_URL = '/dashboard/'
 LOGOUT_REDIRECT_URL = '/'
 
 # ─────────────────────────────────────────────
-# EMAIL — Console backend only
+# EMAIL — Gmail SMTP
 # ─────────────────────────────────────────────
-# Verification codes are shown directly on the verify page
-# and printed to Railway logs. No SMTP needed.
-EMAIL_BACKEND      = 'django.core.mail.backends.console.EmailBackend'
-DEFAULT_FROM_EMAIL = 'AuthApp <noreply@authapp.local>'
-
+EMAIL_BACKEND      = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST         = 'smtp.gmail.com'
+EMAIL_PORT         = 587
+EMAIL_USE_TLS      = True
+EMAIL_HOST_USER    = config('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+DEFAULT_FROM_EMAIL = f'AuthApp <{config("EMAIL_HOST_USER", default="noreply@authapp.local")}>'
